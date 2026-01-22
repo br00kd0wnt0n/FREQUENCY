@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { RadioInterface } from './components/Radio/RadioInterface';
 import { NotebookPanel } from './components/Notebook/NotebookPanel';
 import { useSocket } from './hooks/useSocket';
-import { useRadioStore } from './stores/radioStore';
 import './styles/radio.css';
 
 function App() {
   const [showNotebook, setShowNotebook] = useState(false);
   const { connect, isConnected } = useSocket();
-  const currentFrequency = useRadioStore((state) => state.currentFrequency);
 
   useEffect(() => {
     connect();

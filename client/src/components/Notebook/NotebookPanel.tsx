@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNotebookStore } from '../../stores/notebookStore';
 
 interface NotebookPanelProps {

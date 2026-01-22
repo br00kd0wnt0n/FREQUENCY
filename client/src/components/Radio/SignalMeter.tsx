@@ -1,9 +1,9 @@
 interface SignalMeterProps {
   staticLevel: number;
-  broadcastType: string | null;
+  broadcastType?: string | null;
 }
 
-export function SignalMeter({ staticLevel, broadcastType }: SignalMeterProps) {
+export function SignalMeter({ staticLevel }: SignalMeterProps) {
   // Calculate signal strength (inverse of static level)
   const signalStrength = 1 - staticLevel;
   const activeBars = Math.round(signalStrength * 10);

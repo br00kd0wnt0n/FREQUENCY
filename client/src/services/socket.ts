@@ -1,13 +1,11 @@
 import { io, Socket } from 'socket.io-client';
-import { SocketEvents } from '@frequency/shared';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 class SocketService {
   private socket: Socket | null = null;
-  private userId: string | null = null;
 
-  connect(userId?: string): Socket {
+  connect(): Socket {
     if (this.socket?.connected) {
       return this.socket;
     }
@@ -16,8 +14,6 @@ class SocketService {
       transports: ['websocket', 'polling'],
       autoConnect: true,
     });
-
-    this.userId = userId || null;
 
     return this.socket;
   }

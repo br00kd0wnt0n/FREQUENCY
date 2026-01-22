@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { socketService } from '../services/socket';
 import { useRadioStore } from '../stores/radioStore';
 import { useNotebookStore } from '../stores/notebookStore';
@@ -26,7 +26,7 @@ export function useSocket() {
 
   const connect = useCallback(() => {
     const storedUserId = localStorage.getItem('frequency_user_id');
-    const socket = socketService.connect(storedUserId || undefined);
+    const socket = socketService.connect();
 
     socket.on('connect', () => {
       setIsConnected(true);

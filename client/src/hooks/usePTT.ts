@@ -1,5 +1,54 @@
 import { useState, useRef, useCallback } from 'react';
 
+// Type declarations for Speech Recognition API
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface ISpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: ((this: ISpeechRecognition, ev: Event) => void) | null;
+  onresult: ((this: ISpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: ISpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
+  onend: ((this: ISpeechRecognition, ev: Event) => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+interface ISpeechRecognitionConstructor {
+  new(): ISpeechRecognition;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: ISpeechRecognitionConstructor;
+    webkitSpeechRecognition?: ISpeechRecognitionConstructor;
+  }
+}
+
 interface UsePTTOptions {
   onStart?: () => void;
   onEnd?: (transcript: string) => void;
@@ -9,15 +58,15 @@ interface UsePTTOptions {
 export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const transcriptRef = useRef('');
 
   const startPTT = useCallback(() => {
     if (isActive) return;
 
     // Check for speech recognition support
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionClass) {
       onError?.('Speech recognition not supported');
       return;
     }
@@ -27,7 +76,7 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
     onStart?.();
 
     // Setup speech recognition
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionClass();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
@@ -36,7 +85,7 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
       setIsListening(true);
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -49,7 +98,7 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
       }
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
       if (event.error !== 'aborted') {
         onError?.(event.error);
@@ -94,12 +143,4 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
     startPTT,
     stopPTT,
   };
-}
-
-// Type declarations for Speech Recognition
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
 }

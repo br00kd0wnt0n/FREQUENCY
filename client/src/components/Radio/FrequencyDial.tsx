@@ -13,7 +13,7 @@ const MIN_FREQUENCY = 26.000;
 const MAX_FREQUENCY = 32.000;
 
 export function FrequencyDial({ currentFrequency, onTune }: FrequencyDialProps) {
-  const [scanSpeed, setScanSpeed] = useState<'slow' | 'fast'>('slow');
+  const [scanSpeed] = useState<'slow' | 'fast'>('slow');
   const { startScan, stopScan } = useSocket();
   const { isScanning, setScanning } = useRadioStore();
 
