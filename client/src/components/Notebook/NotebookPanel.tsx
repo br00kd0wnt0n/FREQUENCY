@@ -1,7 +1,7 @@
 import { useNotebookStore } from '../../stores/notebookStore';
 
 interface NotebookPanelProps {
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 type TabType = 'frequencies' | 'characters' | 'signals' | 'scratchpad';
@@ -27,9 +27,11 @@ export function NotebookPanel({ onClose }: NotebookPanelProps) {
     <div className="notebook-panel">
       <div className="notebook-header">
         <h2 className="notebook-title">NOTEBOOK</h2>
-        <button className="notebook-close" onClick={onClose}>
-          ×
-        </button>
+        {onClose && (
+          <button className="notebook-close" onClick={onClose}>
+            ×
+          </button>
+        )}
       </div>
 
       <div className="notebook-tabs">

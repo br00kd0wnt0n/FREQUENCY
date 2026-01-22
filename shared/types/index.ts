@@ -53,7 +53,7 @@ export interface CharacterTrust {
   character_id: string;
   trust_level: number;
   interactions_count: number;
-  revealed_secrets: string[];
+  revealed_secrets: number[];
   updated_at: Date;
 }
 

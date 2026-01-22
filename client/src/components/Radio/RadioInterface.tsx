@@ -3,11 +3,16 @@ import { PTTButton } from './PTTButton';
 import { SignalMeter } from './SignalMeter';
 import { useRadioStore } from '../../stores/radioStore';
 import { useSocket } from '../../hooks/useSocket';
+import { useDeviceStore } from '../../stores/deviceStore';
 
 const MIN_FREQ = 26.000;
 const MAX_FREQ = 32.000;
 
-export function RadioInterface() {
+interface RadioInterfaceProps {
+  showPTT?: boolean;
+}
+
+export function RadioInterface({ showPTT = true }: RadioInterfaceProps) {
   const {
     currentFrequency,
     broadcastType,
@@ -20,6 +25,7 @@ export function RadioInterface() {
   } = useRadioStore();
 
   const { tune, pttStart, pttEnd } = useSocket();
+  const { isHandsetConnected } = useDeviceStore();
 
   const handleTune = (frequency: number) => {
     tune(frequency);
@@ -49,11 +55,6 @@ export function RadioInterface() {
 
   return (
     <div className="radio-interface">
-      {/* Atmospheric Elements */}
-      <div className="rain-overlay" />
-      <div className="desktop-surface" />
-      <div className="lamp-glow" />
-
       {/* The Radio Unit */}
       <div className="radio-unit">
         {/* Top Section with Antenna */}
@@ -63,11 +64,11 @@ export function RadioInterface() {
 
         {/* LED Indicators */}
         <div className="led-row">
-          <div className={`led ${broadcastType !== 'static' ? 'on' : ''}`} />
-          <div className={`led ${isScanning ? 'amber' : ''}`} />
-          <div className={`led ${isCharacterThinking ? 'red' : ''}`} />
-          <div className="led" />
-          <div className={`led ${canTalk ? 'on' : ''}`} />
+          <div className={`led ${broadcastType !== 'static' ? 'on' : ''}`} title="Signal" />
+          <div className={`led ${isScanning ? 'amber' : ''}`} title="Scanning" />
+          <div className={`led ${isCharacterThinking ? 'red' : ''}`} title="RX" />
+          <div className={`led ${isHandsetConnected ? 'on' : ''}`} title="Handset" />
+          <div className={`led ${canTalk ? 'on' : ''}`} title="Voice" />
         </div>
 
         {/* CRT Display */}
@@ -103,7 +104,7 @@ export function RadioInterface() {
           </div>
 
           {/* Signal Meter */}
-          <SignalMeter staticLevel={staticLevel} broadcastType={broadcastType} />
+          <SignalMeter staticLevel={staticLevel} />
         </div>
 
         {/* Tuning Section */}
@@ -120,7 +121,7 @@ export function RadioInterface() {
             <div className="character-response-header">
               <span className="character-callsign">{characterCallsign}</span>
               {isCharacterThinking && (
-                <span className="character-thinking">● TRANSMITTING...</span>
+                <span className="character-thinking">● RECEIVING...</span>
               )}
             </div>
             {lastCharacterResponse && !isCharacterThinking && (
@@ -132,32 +133,36 @@ export function RadioInterface() {
         )}
       </div>
 
-      {/* Mic Cable Visual */}
-      <div className="mic-cable">
-        <svg viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M30 0 Q20 30, 10 50 Q0 70, 15 85 Q25 95, 5 100"
-            stroke="#222"
-            strokeWidth="8"
-            strokeLinecap="round"
-            fill="none"
-          />
-          <path
-            d="M30 0 Q20 30, 10 50 Q0 70, 15 85 Q25 95, 5 100"
-            stroke="#333"
-            strokeWidth="6"
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-      </div>
+      {/* PTT Button - only shown if showPTT is true */}
+      {showPTT && (
+        <>
+          {/* Mic Cable Visual */}
+          <div className="mic-cable">
+            <svg viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M30 0 Q20 30, 10 50 Q0 70, 15 85 Q25 95, 5 100"
+                stroke="#222"
+                strokeWidth="8"
+                strokeLinecap="round"
+                fill="none"
+              />
+              <path
+                d="M30 0 Q20 30, 10 50 Q0 70, 15 85 Q25 95, 5 100"
+                stroke="#333"
+                strokeWidth="6"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
+          </div>
 
-      {/* PTT Button */}
-      <PTTButton
-        disabled={!canTalk}
-        onStart={handlePTTStart}
-        onEnd={handlePTTEnd}
-      />
+          <PTTButton
+            disabled={!canTalk}
+            onStart={handlePTTStart}
+            onEnd={handlePTTEnd}
+          />
+        </>
+      )}
 
       {/* Static Overlay */}
       <div className={`static-overlay ${staticLevel > 0.5 ? 'visible' : ''}`} />

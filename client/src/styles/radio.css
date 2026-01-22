@@ -854,3 +854,385 @@
 .scratchpad-textarea::placeholder {
   color: #444;
 }
+
+/* ==================== MOBILE HANDSET STYLES ==================== */
+
+.mobile-handset {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Link Screen - Enter Session Code */
+.link-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+}
+
+.link-screen h1 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  letter-spacing: 4px;
+  margin-bottom: 8px;
+  text-shadow: var(--glow-cyan);
+}
+
+.link-screen p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
+.code-input-group {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.code-input {
+  width: 56px;
+  height: 72px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--accent-cyan);
+  font-family: inherit;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.code-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.code-input::placeholder {
+  color: var(--text-dim);
+  font-size: 24px;
+}
+
+.link-button {
+  width: 100%;
+  max-width: 280px;
+  padding: 16px 32px;
+  background: linear-gradient(180deg, rgba(0, 255, 200, 0.2) 0%, rgba(0, 255, 200, 0.1) 100%);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 8px;
+  color: var(--accent-cyan);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.link-button:hover {
+  background: rgba(0, 255, 200, 0.3);
+  box-shadow: var(--glow-cyan);
+}
+
+.link-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.link-hint {
+  margin-top: 32px;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* Handset Body */
+.handset-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Handset Header */
+.handset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.handset-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.handset-back:hover {
+  color: var(--accent-cyan);
+}
+
+.handset-session {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* Handset Display - Compact Frequency */
+.handset-display {
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(0, 30, 40, 0.6) 0%, rgba(0, 20, 30, 0.8) 100%);
+  border-bottom: 1px solid rgba(0, 150, 200, 0.2);
+  text-align: center;
+}
+
+.handset-display .frequency-value {
+  font-size: 48px;
+  font-weight: 300;
+  color: #00ffcc;
+  text-shadow:
+    0 0 15px rgba(0, 255, 200, 0.8),
+    0 0 30px rgba(0, 255, 200, 0.4);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 3px;
+}
+
+.handset-display .frequency-unit {
+  font-size: 14px;
+  color: rgba(0, 255, 200, 0.6);
+  margin-left: 8px;
+}
+
+.handset-display .broadcast-info {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Handset LED Row */
+.handset-led-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.handset-led {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+.handset-led .led {
+  width: 6px;
+  height: 6px;
+}
+
+/* PTT Area */
+.ptt-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(180deg,
+    rgba(30, 25, 20, 0.6) 0%,
+    rgba(40, 30, 25, 0.8) 50%,
+    rgba(30, 25, 20, 0.9) 100%);
+}
+
+/* Giant PTT Button */
+.ptt-giant {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #444, #222);
+  border: 6px solid #555;
+  color: #888;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 4px 8px rgba(255, 255, 255, 0.05),
+    0 0 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.ptt-giant::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 6px;
+  background: linear-gradient(90deg, #333, #444, #333);
+  border-radius: 3px;
+}
+
+.ptt-giant:hover:not(.disabled) {
+  border-color: #00ff88;
+  color: #00ff88;
+}
+
+.ptt-giant:active:not(.disabled),
+.ptt-giant.active:not(.disabled) {
+  transform: scale(0.98);
+  background: linear-gradient(145deg, #ff4444, #cc0000);
+  border-color: #ff6666;
+  color: white;
+  box-shadow:
+    0 0 60px rgba(255, 68, 68, 0.6),
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+.ptt-giant.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ptt-giant .ptt-icon {
+  font-size: 48px;
+}
+
+.ptt-giant .ptt-text {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+
+.ptt-giant .ptt-subtext {
+  font-size: 9px;
+  opacity: 0.6;
+  letter-spacing: 1px;
+}
+
+/* PTT Status */
+.ptt-status {
+  margin-top: 24px;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.ptt-status.recording {
+  color: #ff4444;
+  animation: blink 0.5s ease infinite;
+}
+
+/* Speaker Grille */
+.speaker-grille {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid var(--border-color);
+}
+
+.speaker-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.speaker-bar {
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    #333 10%,
+    #333 90%,
+    transparent 100%);
+  border-radius: 1px;
+}
+
+/* Handset Footer */
+.handset-footer {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.handset-footer p {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+
+/* ==================== MOBILE RESPONSIVE ==================== */
+
+@media (max-width: 480px) {
+  .link-screen {
+    padding: 24px;
+  }
+
+  .code-input {
+    width: 48px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .ptt-giant {
+    width: 160px;
+    height: 160px;
+  }
+
+  .ptt-giant .ptt-icon {
+    font-size: 40px;
+  }
+
+  .handset-display .frequency-value {
+    font-size: 40px;
+  }
+}
+
+/* iOS safe area support */
+@supports (padding: max(0px)) {
+  .mobile-handset {
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+
+  .ptt-area {
+    padding-bottom: max(32px, calc(env(safe-area-inset-bottom) + 16px));
+  }
+}
