@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: frequency-db
+    environment:
+      POSTGRES_USER: frequency
+      POSTGRES_PASSWORD: frequency_dev
+      POSTGRES_DB: frequency
+    ports:
+      - "5432:5432"
+    volumes:
+      - frequency_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frequency"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  frequency_data:

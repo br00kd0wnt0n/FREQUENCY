@@ -1,0 +1,71 @@
+{
+  "flags": [
+    {
+      "key": "met_nightbird",
+      "description": "Player has made contact with Helena",
+      "triggers_content": ["signal_morse_1"]
+    },
+    {
+      "key": "met_dusty",
+      "description": "Player has made contact with Dusty",
+      "triggers_content": []
+    },
+    {
+      "key": "heard_about_marcus",
+      "description": "Player has learned about Marcus's disappearance",
+      "triggers_content": ["signal_numbers_1"]
+    },
+    {
+      "key": "knows_about_tower",
+      "description": "Player has learned about the tower on Miller's Ridge",
+      "triggers_content": ["frequency_31777"]
+    },
+    {
+      "key": "decoded_morse_1",
+      "description": "Player decoded the first morse signal",
+      "triggers_content": []
+    },
+    {
+      "key": "decoded_numbers_1",
+      "description": "Player decoded the first numbers station message",
+      "triggers_content": ["frequency_secret"]
+    },
+    {
+      "key": "helena_trust_high",
+      "description": "Helena trusts the player enough to share secrets",
+      "triggers_content": ["marcus_frequency"]
+    },
+    {
+      "key": "dusty_trust_high",
+      "description": "Dusty trusts the player enough to share the recording",
+      "triggers_content": ["recording_frequency"]
+    }
+  ],
+
+  "milestones": [
+    {
+      "id": "first_contact",
+      "name": "First Contact",
+      "description": "Make your first radio contact",
+      "requires": ["met_nightbird|met_dusty"]
+    },
+    {
+      "id": "signal_hunter",
+      "name": "Signal Hunter",
+      "description": "Decode your first signal",
+      "requires": ["decoded_morse_1|decoded_numbers_1"]
+    },
+    {
+      "id": "trusted_ally",
+      "name": "Trusted Ally",
+      "description": "Earn the trust of a contact",
+      "requires": ["helena_trust_high|dusty_trust_high"]
+    },
+    {
+      "id": "the_truth",
+      "name": "The Truth",
+      "description": "Uncover what happened that night",
+      "requires": ["knows_about_tower", "helena_trust_high", "dusty_trust_high"]
+    }
+  ]
+}
