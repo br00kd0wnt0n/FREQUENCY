@@ -3,6 +3,11 @@ import path from 'path';
 import { pool } from '../config/database';
 
 async function migrate() {
+  if (!pool) {
+    console.error('DATABASE_URL not configured. Cannot run migrations.');
+    process.exit(1);
+  }
+
   console.log('Running database migrations...');
 
   try {

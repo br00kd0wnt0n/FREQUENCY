@@ -2,6 +2,11 @@ import { pool, query } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 
 async function seed() {
+  if (!pool) {
+    console.error('DATABASE_URL not configured. Cannot seed database.');
+    process.exit(1);
+  }
+
   console.log('Seeding database...');
 
   try {
