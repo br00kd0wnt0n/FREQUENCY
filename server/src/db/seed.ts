@@ -25,7 +25,7 @@ async function seed() {
         knowledge: JSON.stringify({
           marcus: "Knew him well. He was troubled near the end. Kept talking about signals he was picking up.",
           the_tower: "Old radio tower on Miller's Ridge. Hasn't worked in decades. Or so they say.",
-          dusty: "Good kid, but he's scared. Knows something he won't tell me.",
+          jake: "Good kid, but he's scared. Knows something he won't tell me.",
           the_night: "I heard things on the radio that night. Things I can't explain."
         }),
         secrets: JSON.stringify([
@@ -34,7 +34,7 @@ async function seed() {
           "She knows the tower isn't abandoned"
         ]),
         relationships: JSON.stringify({
-          dusty: "Protective, worried about him",
+          jake: "Protective, worried about him",
           operator_9: "Suspicious, doesn't trust them",
           marcus: "Deep grief, possibly love"
         }),
@@ -42,17 +42,17 @@ async function seed() {
       },
       {
         id: uuidv4(),
-        callsign: 'DUSTY',
-        display_name: 'Dusty Martinez',
+        callsign: 'ROADRUNNER',
+        display_name: 'Jake Reeves',
         frequency: 27.450,
-        elevenlabs_voice_id: 'placeholder_voice_id_dusty',
+        elevenlabs_voice_id: 'placeholder_voice_id_jake',
         voice_description: 'Young, nervous energy. Quick talker when anxious.',
-        personality_prompt: `You are Dusty Martinez, a young trucker who picked up radio operation from your grandfather. You're friendly but easily spooked. You saw something at the tower last month and haven't been the same since. You want to tell someone but you're scared they'll think you're crazy - or worse, that they'll believe you.`,
+        personality_prompt: `You are Jake Reeves, callsign ROADRUNNER, a young trucker who picked up radio operation from your grandfather. You're friendly but easily spooked. You saw something at the tower last month and haven't been the same since. You want to tell someone but you're scared they'll think you're crazy - or worse, that they'll believe you.`,
         speaking_style: "Fast when nervous, lots of 'um' and 'you know'. Trails off when thinking about the tower. Uses trucker slang.",
         background: "22 years old, long-haul trucker. Grew up in this area. Grandfather was a ham radio operator.",
         knowledge: JSON.stringify({
           the_tower: "Saw lights up there. Impossible lights. Moving in patterns.",
-          helena: "She's good people. Knew my grandpa. Thinks I know more than I'm saying.",
+          nightbird: "Helena's good people. Knew my grandpa. Thinks I know more than I'm saying.",
           marcus: "Only heard stories. Disappeared before I started on the radio."
         }),
         secrets: JSON.stringify([
@@ -61,7 +61,7 @@ async function seed() {
           "He knows the frequency the lights seemed to respond to"
         ]),
         relationships: JSON.stringify({
-          helena: "Trusts her like family",
+          nightbird: "Trusts Helena like family",
           operator_9: "Never talked to them but heard warnings"
         }),
         initial_disposition: 'friendly'
@@ -120,7 +120,7 @@ async function seed() {
 
     // Seed frequencies
     const frequencies = [
-      { frequency: 27.450, broadcast_type: 'voice', source_type: 'character', label: 'DUSTY', static_level: 0.3 },
+      { frequency: 27.450, broadcast_type: 'voice', source_type: 'character', label: 'ROADRUNNER', static_level: 0.3 },
       { frequency: 28.200, broadcast_type: 'voice', source_type: 'character', label: 'NIGHTBIRD', static_level: 0.2 },
       { frequency: 29.100, broadcast_type: 'morse', source_type: 'signal', label: 'Unknown Signal', static_level: 0.5 },
       { frequency: 30.500, broadcast_type: 'numbers', source_type: 'signal', label: 'Numbers Station', static_level: 0.6 },

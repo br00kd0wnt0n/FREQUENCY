@@ -20,6 +20,7 @@ interface RadioState {
 
   // Actions
   setFrequency: (frequency: number) => void;
+  setFrequencyWithReset: (frequency: number) => void;
   setTuned: (event: TunedEvent) => void;
   setScanUpdate: (event: ScanUpdateEvent) => void;
   setScanning: (isScanning: boolean, direction?: 'up' | 'down') => void;
@@ -49,6 +50,18 @@ export const useRadioStore = create<RadioState>((set) => ({
 
   setFrequency: (frequency) =>
     set({ currentFrequency: Math.round(frequency * 1000) / 1000 }),
+
+  // Reset broadcast info when scanning away from a frequency
+  setFrequencyWithReset: (frequency) =>
+    set({
+      currentFrequency: Math.round(frequency * 1000) / 1000,
+      broadcastType: 'static',
+      label: null,
+      characterId: null,
+      characterCallsign: null,
+      signalId: null,
+      staticLevel: 0.9,
+    }),
 
   setTuned: (event) =>
     set({

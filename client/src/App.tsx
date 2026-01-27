@@ -20,6 +20,7 @@ function App() {
   const { connect, isConnected, tune, startScan, stopScan, pttStart, pttEnd } = useSocket();
   const {
     setFrequency,
+    setFrequencyWithReset,
     setScanning,
     staticLevel,
     volume,
@@ -110,7 +111,7 @@ function App() {
     // Also emit to server if connected
     startScan(direction, 'slow');
 
-    // Local scanning interval
+    // Local scanning interval - resets broadcast info while scanning
     scanIntervalRef.current = window.setInterval(() => {
       const currentFreq = useRadioStore.getState().currentFrequency;
       let newFreq = direction === 'up'
@@ -121,9 +122,9 @@ function App() {
       if (newFreq > MAX_FREQUENCY) newFreq = MIN_FREQUENCY;
       if (newFreq < MIN_FREQUENCY) newFreq = MAX_FREQUENCY;
 
-      setFrequency(Math.round(newFreq * 1000) / 1000);
+      setFrequencyWithReset(Math.round(newFreq * 1000) / 1000);
     }, SCAN_INTERVAL);
-  }, [startScan, setScanning, setFrequency]);
+  }, [startScan, setScanning, setFrequencyWithReset]);
 
   const stopLocalScan = useCallback(() => {
     if (scanIntervalRef.current) {
