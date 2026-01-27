@@ -146,6 +146,13 @@ html, body {
   overflow: hidden;
 }
 
+/* Three column layout for testing */
+.app-main.desktop-layout.three-column {
+  display: grid;
+  grid-template-columns: minmax(400px, 450px) 1fr minmax(280px, 320px);
+  gap: 24px;
+}
+
 .radio-section {
   flex: 0 0 450px;
   display: flex;
@@ -164,6 +171,33 @@ html, body {
   border-radius: 8px;
   border: 1px solid var(--border-color);
   overflow: hidden;
+}
+
+/* Handset section for desktop testing */
+.handset-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.handset-embed {
+  height: 100%;
+  background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+  border-radius: 12px;
+  border: 2px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.handset-embed .mobile-handset {
+  height: 100%;
+}
+
+.handset-embed .link-screen {
+  display: none;
+}
+
+.handset-embed .handset-body {
+  display: flex !important;
 }
 
 /* Footer with keyboard hints */

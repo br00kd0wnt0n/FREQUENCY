@@ -4,9 +4,13 @@ import { useSocket } from '../../hooks/useSocket';
 import { usePTT } from '../../hooks/usePTT';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 
-export function MobileHandset() {
+interface MobileHandsetProps {
+  embedded?: boolean; // Skip link screen when embedded in desktop view
+}
+
+export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   const [sessionCode, setSessionCode] = useState('');
-  const [isLinked, setIsLinked] = useState(false);
+  const [isLinked, setIsLinked] = useState(embedded); // Auto-link if embedded
   const [inputCode, setInputCode] = useState('');
 
   const {
