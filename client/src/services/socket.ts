@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || '';
+// Trim whitespace from URL (environment variables sometimes have trailing spaces)
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || '').trim();
 
 class SocketService {
   private socket: Socket | null = null;

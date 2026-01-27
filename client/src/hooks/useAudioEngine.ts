@@ -97,13 +97,19 @@ export function useAudioEngine() {
 
     let buffer: ArrayBuffer;
     if (typeof audioData === 'string') {
-      // Base64 encoded
-      const binary = atob(audioData);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
+      if (audioData.startsWith('http://') || audioData.startsWith('https://')) {
+        // URL - fetch the audio
+        const response = await fetch(audioData);
+        buffer = await response.arrayBuffer();
+      } else {
+        // Base64 encoded
+        const binary = atob(audioData);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        buffer = bytes.buffer;
       }
-      buffer = bytes.buffer;
     } else {
       buffer = audioData;
     }

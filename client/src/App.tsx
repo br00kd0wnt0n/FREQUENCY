@@ -17,14 +17,30 @@ const MAX_FREQUENCY = 32.000;
 const SCAN_INTERVAL = 100; // ms between scan steps
 
 function App() {
-  const { connect, isConnected, tune, startScan, stopScan } = useSocket();
-  const { setFrequency, setScanning, staticLevel, volume, isAudioInitialized, setAudioInitialized } = useRadioStore();
+  const { connect, isConnected, tune, startScan, stopScan, pttStart, pttEnd } = useSocket();
+  const {
+    setFrequency,
+    setScanning,
+    staticLevel,
+    volume,
+    isAudioInitialized,
+    setAudioInitialized,
+    lastCharacterResponse,
+    broadcastType,
+    characterCallsign,
+    currentFrequency,
+  } = useRadioStore();
   const { isMobileDevice, sessionCode } = useDeviceStore();
-  const { playStaticNoise, setStaticLevel, playSquelch } = useAudioEngine();
+  const { playStaticNoise, setStaticLevel, playSquelch, playAudioBuffer } = useAudioEngine();
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
   const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
+  const [isPTTActive, setIsPTTActive] = useState(false);
   const scanIntervalRef = useRef<number | null>(null);
   const scanDirectionRef = useRef<'up' | 'down' | null>(null);
+  const lastCharacterResponseRef = useRef<string | null>(null);
+
+  // Check if PTT is allowed (tuned to voice frequency)
+  const canTalk = broadcastType === 'voice' && !!characterCallsign;
 
   useEffect(() => {
     connect();
@@ -61,6 +77,28 @@ function App() {
       setStaticLevel(staticLevel * volume);
     }
   }, [staticLevel, volume, isAudioInitialized, setStaticLevel]);
+
+  // Play character audio when response comes in
+  useEffect(() => {
+    if (!lastCharacterResponse || !isAudioInitialized) return;
+
+    // Check if this is a new response (not the same one we already played)
+    const responseId = lastCharacterResponse.characterId + lastCharacterResponse.transcript;
+    if (responseId === lastCharacterResponseRef.current) return;
+    lastCharacterResponseRef.current = responseId;
+
+    // Play squelch at start
+    playSquelch();
+
+    // Play the character audio if available (base64 or URL)
+    const audioSource = lastCharacterResponse.audioBase64 || lastCharacterResponse.audioUrl;
+    if (audioSource) {
+      playAudioBuffer(audioSource).then(() => {
+        // Play squelch at end
+        playSquelch();
+      });
+    }
+  }, [lastCharacterResponse, isAudioInitialized, playSquelch, playAudioBuffer]);
 
   // Local scan function that updates frequency directly (for testing without server)
   const startLocalScan = useCallback((direction: 'up' | 'down') => {
@@ -133,6 +171,14 @@ function App() {
         setFrequency(Math.round(newFreq * 1000) / 1000);
         tune(Math.round(newFreq * 1000) / 1000);
         if (isAudioInitialized) playSquelch();
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        // Spacebar for PTT
+        if (canTalk && !isPTTActive) {
+          setIsPTTActive(true);
+          if (isAudioInitialized) playSquelch();
+          pttStart(currentFrequency);
+        }
       }
     };
 
@@ -143,6 +189,15 @@ function App() {
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
         setActiveTuneButton(null);
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        // Release PTT
+        if (isPTTActive) {
+          setIsPTTActive(false);
+          if (isAudioInitialized) playSquelch();
+          // For now, send empty transcript - in future this would be from speech recognition
+          pttEnd(currentFrequency, '');
+        }
       }
     };
 
@@ -157,7 +212,7 @@ function App() {
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, [isMobileDevice, startLocalScan, stopLocalScan, setFrequency, tune]);
+  }, [isMobileDevice, startLocalScan, stopLocalScan, setFrequency, tune, canTalk, isPTTActive, isAudioInitialized, playSquelch, pttStart, pttEnd, currentFrequency]);
 
   // Mobile handset view
   if (isMobileDevice) {
@@ -193,9 +248,13 @@ function App() {
 
       <footer className="app-footer">
         <div className="keyboard-hints">
-          <span><kbd>←</kbd> <kbd>→</kbd> Scan frequencies</span>
+          <span><kbd>←</kbd> <kbd>→</kbd> Scan</span>
           <span><kbd>↑</kbd> <kbd>↓</kbd> Fine tune</span>
+          <span className={canTalk ? '' : 'disabled'}><kbd>Space</kbd> Push to talk</span>
         </div>
+        {isPTTActive && (
+          <div className="ptt-active-indicator">● TRANSMITTING</div>
+        )}
       </footer>
 
       {showConnectPrompt && (

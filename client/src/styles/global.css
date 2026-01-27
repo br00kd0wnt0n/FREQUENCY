@@ -227,6 +227,29 @@ html, body {
   margin: 0 2px;
 }
 
+.keyboard-hints span.disabled {
+  opacity: 0.3;
+}
+
+.ptt-active-indicator {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: rgba(255, 68, 68, 0.2);
+  border: 1px solid rgba(255, 68, 68, 0.5);
+  border-radius: 4px;
+  color: #ff4444;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  animation: blink 0.5s ease infinite;
+  text-align: center;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ==================== MODAL STYLES ==================== */
 
 .modal-overlay {
