@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRadioStore } from '../../stores/radioStore';
 import { useSocket } from '../../hooks/useSocket';
 import { usePTT } from '../../hooks/usePTT';
@@ -12,11 +12,14 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   const [sessionCode, setSessionCode] = useState('');
   const [isLinked, setIsLinked] = useState(embedded); // Auto-link if embedded
   const [inputCode, setInputCode] = useState('');
+  const [userTranscript, setUserTranscript] = useState<string | null>(null);
+  const transcriptTimeoutRef = useRef<number | null>(null);
 
   const {
     currentFrequency,
     broadcastType,
     characterCallsign,
+    staticLevel,
     isCharacterThinking,
     lastCharacterResponse,
   } = useRadioStore();
@@ -42,6 +45,19 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     }
   };
 
+  // Show user transcript and fade it out
+  const showUserTranscript = (text: string) => {
+    setUserTranscript(text);
+    // Clear any existing timeout
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+    }
+    // Fade out after 4 seconds
+    transcriptTimeoutRef.current = window.setTimeout(() => {
+      setUserTranscript(null);
+    }, 4000);
+  };
+
   const { isActive, startPTT, stopPTT } = usePTT({
     onStart: () => {
       playSquelch();
@@ -50,10 +66,15 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     onEnd: (transcript) => {
       playSquelch();
       pttEnd(currentFrequency, transcript);
+      // Show user's transcript in the display
+      if (transcript && transcript.trim()) {
+        showUserTranscript(transcript);
+      }
     },
   });
 
-  const canTalk = broadcastType === 'voice' && characterCallsign;
+  // Character is listening if on voice channel
+  const hasCharacter = broadcastType === 'voice' && characterCallsign;
 
   // Link screen
   if (!isLinked) {
@@ -117,47 +138,55 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
           <div className="grille-line" />
         </div>
 
-        {/* Frequency display */}
-        <div className="handset-display">
-          <div className="display-inner">
-            <div className="freq-readout">
-              <span className="freq-value">{currentFrequency.toFixed(3)}</span>
-              <span className="freq-unit">MHz</span>
+        {/* CRT-style frequency display (mini version of radio) */}
+        <div className="handset-crt-display">
+          <div className="crt-inner">
+            {/* Signal meter bar */}
+            <div className="mini-signal-meter">
+              <div
+                className="signal-fill"
+                style={{ width: `${(1 - staticLevel) * 100}%` }}
+              />
             </div>
-            <div className={`channel-info ${!characterCallsign ? 'static' : ''}`}>
+
+            {/* Frequency readout */}
+            <div className="crt-freq-readout">
+              <span className="crt-freq-value">{currentFrequency.toFixed(3)}</span>
+              <span className="crt-freq-unit">MHz</span>
+            </div>
+
+            {/* Channel info */}
+            <div className={`crt-channel-info ${!characterCallsign ? 'static' : ''}`}>
               {characterCallsign || '- - - STATIC - - -'}
             </div>
-            {isCharacterThinking && (
-              <div className="rx-indicator">● RX</div>
-            )}
+
+            {/* Status indicators */}
+            <div className="crt-status-row">
+              <span className={`crt-indicator ${isConnected ? 'on' : ''}`}>LINK</span>
+              <span className={`crt-indicator ${hasCharacter ? 'on' : ''}`}>VOICE</span>
+              <span className={`crt-indicator ${isActive ? 'on tx' : ''}`}>TX</span>
+              <span className={`crt-indicator ${isCharacterThinking ? 'on rx' : ''}`}>RX</span>
+            </div>
           </div>
         </div>
 
-        {/* Status LEDs */}
-        <div className="handset-leds">
-          <div className={`led ${isConnected ? 'on green' : ''}`} />
-          <div className={`led ${isLinked ? 'on green' : ''}`} />
-          <div className={`led ${isActive ? 'on red' : ''}`} />
-        </div>
-
-        {/* Character response (small) */}
+        {/* Character response area */}
         {lastCharacterResponse && !isCharacterThinking && (
-          <div className="handset-transcript">
-            <span className="callsign">{characterCallsign}:</span>
-            <span className="text">"{lastCharacterResponse.transcript.slice(0, 100)}..."</span>
+          <div className="handset-response">
+            <span className="response-callsign">{characterCallsign}:</span>
+            <span className="response-text">"{lastCharacterResponse.transcript.slice(0, 80)}..."</span>
           </div>
         )}
 
-        {/* Giant PTT Button */}
+        {/* Giant PTT Button - always enabled */}
         <div className="ptt-area">
           <button
-            className={`ptt-giant ${isActive ? 'active' : ''} ${!canTalk ? 'disabled' : ''}`}
-            onMouseDown={canTalk ? startPTT : undefined}
-            onMouseUp={canTalk ? stopPTT : undefined}
-            onMouseLeave={canTalk ? stopPTT : undefined}
-            onTouchStart={canTalk ? (e) => { e.preventDefault(); startPTT(); } : undefined}
-            onTouchEnd={canTalk ? stopPTT : undefined}
-            disabled={!canTalk}
+            className={`ptt-giant ${isActive ? 'active' : ''}`}
+            onMouseDown={startPTT}
+            onMouseUp={stopPTT}
+            onMouseLeave={stopPTT}
+            onTouchStart={(e) => { e.preventDefault(); startPTT(); }}
+            onTouchEnd={stopPTT}
           >
             <div className="ptt-inner">
               <span className="ptt-label">PUSH TO TALK</span>
@@ -166,18 +195,19 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
               </span>
             </div>
           </button>
+        </div>
 
-          {!canTalk && (
-            <div className="ptt-disabled-hint">
-              Tune to a voice channel on desktop
-            </div>
-          )}
+        {/* User transcript LED display */}
+        <div className={`user-transcript-display ${userTranscript ? 'visible' : ''}`}>
+          <div className="transcript-led-text">
+            {userTranscript || ''}
+          </div>
         </div>
 
         {/* Bottom info */}
         <div className="handset-footer">
           <div className="session-info">
-            SESSION: {sessionCode}
+            {embedded ? 'EMBEDDED MODE' : `SESSION: ${sessionCode}`}
           </div>
         </div>
       </div>
