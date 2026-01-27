@@ -173,11 +173,13 @@ function App() {
         if (isAudioInitialized) playSquelch();
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        // Spacebar for PTT
-        if (canTalk && !isPTTActive) {
+        // Spacebar for PTT - show indicator even if can't talk
+        if (!isPTTActive) {
           setIsPTTActive(true);
           if (isAudioInitialized) playSquelch();
-          pttStart(currentFrequency);
+          if (canTalk) {
+            pttStart(currentFrequency);
+          }
         }
       }
     };
@@ -195,8 +197,10 @@ function App() {
         if (isPTTActive) {
           setIsPTTActive(false);
           if (isAudioInitialized) playSquelch();
-          // For now, send empty transcript - in future this would be from speech recognition
-          pttEnd(currentFrequency, '');
+          if (canTalk) {
+            // For now, send empty transcript - in future this would be from speech recognition
+            pttEnd(currentFrequency, '');
+          }
         }
       }
     };
@@ -253,7 +257,9 @@ function App() {
           <span className={canTalk ? '' : 'disabled'}><kbd>Space</kbd> Push to talk</span>
         </div>
         {isPTTActive && (
-          <div className="ptt-active-indicator">● TRANSMITTING</div>
+          <div className={`ptt-active-indicator ${!canTalk ? 'no-channel' : ''}`}>
+            {canTalk ? '● TRANSMITTING' : '● NO VOICE CHANNEL - Tune to find one'}
+          </div>
         )}
       </footer>
 
