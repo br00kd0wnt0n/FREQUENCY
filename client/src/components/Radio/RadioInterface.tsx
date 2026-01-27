@@ -10,9 +10,10 @@ const MAX_FREQ = 32.000;
 
 interface RadioInterfaceProps {
   showPTT?: boolean;
+  activeTuneButton?: 'up' | 'down' | null;
 }
 
-export function RadioInterface({ showPTT = true }: RadioInterfaceProps) {
+export function RadioInterface({ showPTT = true, activeTuneButton = null }: RadioInterfaceProps) {
   const {
     currentFrequency,
     broadcastType,
@@ -112,6 +113,7 @@ export function RadioInterface({ showPTT = true }: RadioInterfaceProps) {
           <FrequencyDial
             currentFrequency={currentFrequency}
             onTune={handleTune}
+            activeTuneButton={activeTuneButton}
           />
         </div>
 

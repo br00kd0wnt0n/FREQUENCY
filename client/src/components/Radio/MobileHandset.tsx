@@ -160,9 +160,9 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
             disabled={!canTalk}
           >
             <div className="ptt-inner">
-              <span className="ptt-label">PTT</span>
+              <span className="ptt-label">PUSH TO TALK</span>
               <span className="ptt-sublabel">
-                {isActive ? 'TRANSMITTING' : 'PUSH TO TALK'}
+                {isActive ? '● TRANSMITTING' : 'HOLD TO SPEAK'}
               </span>
             </div>
           </button>

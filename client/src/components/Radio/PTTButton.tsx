@@ -45,9 +45,9 @@ export function PTTButton({ disabled, onStart, onEnd }: PTTButtonProps) {
         onTouchEnd={handlePTTEnd}
         disabled={disabled}
       >
-        <span>PTT</span>
-        <span style={{ fontSize: '8px', opacity: 0.7 }}>
-          {isActive ? 'TRANSMITTING' : 'HOLD TO TALK'}
+        <span className="ptt-label">PUSH TO TALK</span>
+        <span className="ptt-status-text">
+          {isActive ? '● TRANSMITTING' : 'HOLD TO SPEAK'}
         </span>
       </button>
       {!disabled && (

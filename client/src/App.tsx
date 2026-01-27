@@ -6,6 +6,7 @@ import { ConnectPhone } from './components/shared/ConnectPhone';
 import { useSocket } from './hooks/useSocket';
 import { useRadioStore } from './stores/radioStore';
 import { useDeviceStore } from './stores/deviceStore';
+import { useAudioEngine } from './hooks/useAudioEngine';
 import './styles/radio.css';
 
 // Constants for local scanning
@@ -17,15 +18,49 @@ const SCAN_INTERVAL = 100; // ms between scan steps
 
 function App() {
   const { connect, isConnected, tune, startScan, stopScan } = useSocket();
-  const { setFrequency, setScanning } = useRadioStore();
+  const { setFrequency, setScanning, staticLevel, volume, isAudioInitialized, setAudioInitialized } = useRadioStore();
   const { isMobileDevice, sessionCode } = useDeviceStore();
+  const { playStaticNoise, setStaticLevel, playSquelch } = useAudioEngine();
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
+  const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const scanDirectionRef = useRef<'up' | 'down' | null>(null);
 
   useEffect(() => {
     connect();
   }, [connect]);
+
+  // Initialize audio on first user interaction (to satisfy autoplay policy)
+  useEffect(() => {
+    if (isAudioInitialized) return;
+
+    const initAudio = () => {
+      playStaticNoise(staticLevel * volume);
+      setAudioInitialized(true);
+      playSquelch(); // Initial squelch sound
+      // Remove listeners after first interaction
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+    };
+
+    window.addEventListener('click', initAudio);
+    window.addEventListener('keydown', initAudio);
+    window.addEventListener('touchstart', initAudio);
+
+    return () => {
+      window.removeEventListener('click', initAudio);
+      window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+    };
+  }, [isAudioInitialized, playStaticNoise, playSquelch, setAudioInitialized, staticLevel, volume]);
+
+  // Update static level when it changes (from tuning)
+  useEffect(() => {
+    if (isAudioInitialized) {
+      setStaticLevel(staticLevel * volume);
+    }
+  }, [staticLevel, volume, isAudioInitialized, setStaticLevel]);
 
   // Local scan function that updates frequency directly (for testing without server)
   const startLocalScan = useCallback((direction: 'up' | 'down') => {
@@ -80,20 +115,24 @@ function App() {
         startLocalScan('up');
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
+        setActiveTuneButton('up');
         // Fine tune up
         const currentFreq = useRadioStore.getState().currentFrequency;
         let newFreq = currentFreq + STEP_FINE;
         if (newFreq > MAX_FREQUENCY) newFreq = MIN_FREQUENCY;
         setFrequency(Math.round(newFreq * 1000) / 1000);
         tune(Math.round(newFreq * 1000) / 1000);
+        if (isAudioInitialized) playSquelch();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
+        setActiveTuneButton('down');
         // Fine tune down
         const currentFreq = useRadioStore.getState().currentFrequency;
         let newFreq = currentFreq - STEP_FINE;
         if (newFreq < MIN_FREQUENCY) newFreq = MAX_FREQUENCY;
         setFrequency(Math.round(newFreq * 1000) / 1000);
         tune(Math.round(newFreq * 1000) / 1000);
+        if (isAudioInitialized) playSquelch();
       }
     };
 
@@ -101,6 +140,9 @@ function App() {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         stopLocalScan();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActiveTuneButton(null);
       }
     };
 
@@ -137,7 +179,7 @@ function App() {
 
       <main className="app-main desktop-layout three-column">
         <div className="radio-section">
-          <RadioInterface showPTT={false} />
+          <RadioInterface showPTT={false} activeTuneButton={activeTuneButton} />
         </div>
         <div className="notebook-section">
           <NotebookPanel />

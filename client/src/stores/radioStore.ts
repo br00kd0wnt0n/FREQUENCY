@@ -15,6 +15,8 @@ interface RadioState {
   isPTTActive: boolean;
   isCharacterThinking: boolean;
   lastCharacterResponse: CharacterAudioEvent | null;
+  volume: number;
+  isAudioInitialized: boolean;
 
   // Actions
   setFrequency: (frequency: number) => void;
@@ -24,6 +26,8 @@ interface RadioState {
   setPTTActive: (active: boolean) => void;
   setCharacterThinking: (thinking: boolean) => void;
   setCharacterResponse: (response: CharacterAudioEvent | null) => void;
+  setVolume: (volume: number) => void;
+  setAudioInitialized: (initialized: boolean) => void;
 }
 
 export const useRadioStore = create<RadioState>((set) => ({
@@ -40,6 +44,8 @@ export const useRadioStore = create<RadioState>((set) => ({
   isPTTActive: false,
   isCharacterThinking: false,
   lastCharacterResponse: null,
+  volume: 0.5,
+  isAudioInitialized: false,
 
   setFrequency: (frequency) =>
     set({ currentFrequency: Math.round(frequency * 1000) / 1000 }),
@@ -72,4 +78,8 @@ export const useRadioStore = create<RadioState>((set) => ({
   setCharacterThinking: (thinking) => set({ isCharacterThinking: thinking }),
 
   setCharacterResponse: (response) => set({ lastCharacterResponse: response }),
+
+  setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
+
+  setAudioInitialized: (initialized) => set({ isAudioInitialized: initialized }),
 }));
