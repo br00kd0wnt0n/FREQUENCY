@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "start": "cd /app/client && serve dist -s -l tcp://0.0.0.0:$PORT",
+    "start": "serve /app/client/dist -s -l tcp://0.0.0.0:$PORT",
     "preview": "vite preview"
   },
   "dependencies": {
