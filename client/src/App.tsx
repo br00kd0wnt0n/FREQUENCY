@@ -160,7 +160,6 @@ function App() {
         if (newFreq > MAX_FREQUENCY) newFreq = MIN_FREQUENCY;
         setFrequency(Math.round(newFreq * 1000) / 1000);
         tune(Math.round(newFreq * 1000) / 1000);
-        if (isAudioInitialized) playSquelch();
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setActiveTuneButton('down');
@@ -170,13 +169,11 @@ function App() {
         if (newFreq < MIN_FREQUENCY) newFreq = MAX_FREQUENCY;
         setFrequency(Math.round(newFreq * 1000) / 1000);
         tune(Math.round(newFreq * 1000) / 1000);
-        if (isAudioInitialized) playSquelch();
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         // Spacebar for PTT - show indicator even if can't talk
         if (!isPTTActive) {
           setIsPTTActive(true);
-          if (isAudioInitialized) playSquelch();
           if (canTalk) {
             pttStart(currentFrequency);
           }
@@ -196,7 +193,6 @@ function App() {
         // Release PTT
         if (isPTTActive) {
           setIsPTTActive(false);
-          if (isAudioInitialized) playSquelch();
           if (canTalk) {
             // For now, send empty transcript - in future this would be from speech recognition
             pttEnd(currentFrequency, '');
