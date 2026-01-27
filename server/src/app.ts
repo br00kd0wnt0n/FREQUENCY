@@ -6,12 +6,18 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// Middleware - allow all origins for now (Railway deployments)
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: true,
   credentials: true,
 }));
 app.use(express.json());
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

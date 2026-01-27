@@ -22,23 +22,10 @@ async function start() {
   // Setup Socket.io
   const io = setupSocket(httpServer);
 
-  // Start server
-  httpServer.listen(PORT, () => {
-    console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   ███████╗██████╗ ███████╗ ██████╗ ██╗   ██╗███████╗███╗   ██╗ ██████╗██╗   ██╗  ║
-║   ██╔════╝██╔══██╗██╔════╝██╔═══██╗██║   ██║██╔════╝████╗  ██║██╔════╝╚██╗ ██╔╝  ║
-║   █████╗  ██████╔╝█████╗  ██║   ██║██║   ██║█████╗  ██╔██╗ ██║██║      ╚████╔╝   ║
-║   ██╔══╝  ██╔══██╗██╔══╝  ██║▄▄ ██║██║   ██║██╔══╝  ██║╚██╗██║██║       ╚██╔╝    ║
-║   ██║     ██║  ██║███████╗╚██████╔╝╚██████╔╝███████╗██║ ╚████║╚██████╗   ██║     ║
-║   ╚═╝     ╚═╝  ╚═╝╚══════╝ ╚══▀▀═╝  ╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝   ╚═╝     ║
-║                                                           ║
-║   Server running on port ${PORT}                            ║
-║   WebSocket ready for connections                         ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-    `);
+  // Start server - bind to 0.0.0.0 for Railway
+  httpServer.listen(Number(PORT), '0.0.0.0', () => {
+    console.log(`FREQUENCY server running on port ${PORT}`);
+    console.log(`WebSocket ready for connections`);
   });
 }
 
