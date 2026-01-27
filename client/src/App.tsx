@@ -6,6 +6,7 @@ import { ConnectPhone } from './components/shared/ConnectPhone';
 import { useSocket } from './hooks/useSocket';
 import { useRadioStore } from './stores/radioStore';
 import { useDeviceStore } from './stores/deviceStore';
+import { useNotebookStore } from './stores/notebookStore';
 import { useAudioEngine } from './hooks/useAudioEngine';
 import './styles/radio.css';
 
@@ -28,17 +29,28 @@ function App() {
     setAudioInitialized,
     lastCharacterResponse,
     broadcastType,
+    label,
     characterCallsign,
     currentFrequency,
   } = useRadioStore();
   const { isMobileDevice, sessionCode } = useDeviceStore();
-  const { playStaticNoise, setStaticLevel, playSquelch, playAudioBuffer } = useAudioEngine();
+  const { entries, addEntry } = useNotebookStore();
+  const {
+    playStaticNoise,
+    setStaticLevel,
+    playSquelch,
+    playAudioBuffer,
+    playMorse,
+    playNumbers,
+    stopSignalAudio,
+  } = useAudioEngine();
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
   const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
   const [isPTTActive, setIsPTTActive] = useState(false);
   const scanIntervalRef = useRef<number | null>(null);
   const scanDirectionRef = useRef<'up' | 'down' | null>(null);
   const lastCharacterResponseRef = useRef<string | null>(null);
+  const discoveredRef = useRef<Set<string>>(new Set());
 
   // Check if PTT is allowed (tuned to voice frequency)
   const canTalk = broadcastType === 'voice' && !!characterCallsign;
@@ -78,6 +90,85 @@ function App() {
       setStaticLevel(staticLevel * volume);
     }
   }, [staticLevel, volume, isAudioInitialized, setStaticLevel]);
+
+  // Play morse/numbers when tuned to signal frequencies
+  useEffect(() => {
+    if (!isAudioInitialized) return;
+
+    // Stop any existing signal audio first
+    stopSignalAudio();
+
+    if (broadcastType === 'morse') {
+      // Play morse code - using "THE TOWER REMEMBERS" as default
+      playMorse('THE TOWER REMEMBERS', volume * 0.4);
+    } else if (broadcastType === 'numbers') {
+      // Play numbers station
+      playNumbers('7-3-9-1-4-2-8', volume * 0.5);
+    }
+
+    return () => {
+      stopSignalAudio();
+    };
+  }, [broadcastType, isAudioInitialized, playMorse, playNumbers, stopSignalAudio, volume]);
+
+  // Auto-log discoveries to notebook
+  useEffect(() => {
+    if (!broadcastType || broadcastType === 'static') return;
+
+    const discoveryKey = `${broadcastType}-${currentFrequency.toFixed(3)}`;
+
+    // Check if already discovered (in ref or in entries)
+    if (discoveredRef.current.has(discoveryKey)) return;
+    const alreadyLogged = entries.some(
+      e => e.frequency_ref === currentFrequency && e.entry_type !== 'note'
+    );
+    if (alreadyLogged) {
+      discoveredRef.current.add(discoveryKey);
+      return;
+    }
+
+    // Add to discovered set
+    discoveredRef.current.add(discoveryKey);
+
+    // Create notebook entry based on broadcast type
+    const now = new Date();
+    const id = `discovery-${Date.now()}`;
+
+    const baseEntry = {
+      id,
+      user_id: '',
+      frequency_ref: currentFrequency,
+      character_ref: null,
+      signal_ref: null,
+      is_pinned: false,
+      tags: [],
+      created_at: now,
+      updated_at: now,
+    };
+
+    if (broadcastType === 'voice' && characterCallsign) {
+      addEntry({
+        ...baseEntry,
+        entry_type: 'character',
+        title: characterCallsign,
+        content: `Made contact at ${currentFrequency.toFixed(3)} MHz`,
+      });
+    } else if (broadcastType === 'morse') {
+      addEntry({
+        ...baseEntry,
+        entry_type: 'signal',
+        title: label || 'Morse Signal',
+        content: `Morse code detected at ${currentFrequency.toFixed(3)} MHz`,
+      });
+    } else if (broadcastType === 'numbers') {
+      addEntry({
+        ...baseEntry,
+        entry_type: 'signal',
+        title: label || 'Numbers Station',
+        content: `Numbers station detected at ${currentFrequency.toFixed(3)} MHz`,
+      });
+    }
+  }, [broadcastType, currentFrequency, characterCallsign, label, entries, addEntry]);
 
   // Play character audio when response comes in
   useEffect(() => {
