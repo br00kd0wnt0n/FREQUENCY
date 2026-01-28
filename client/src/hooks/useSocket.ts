@@ -72,12 +72,16 @@ export function useSocket() {
     });
 
     socket.on(SocketEvents.ERROR, (data: ErrorEvent) => {
-      setError(data.message);
-      console.error('Socket error:', data);
+      // Only log real errors, not expected "no character" when scanning
+      if (data.code !== 'NO_CHARACTER') {
+        setError(data.message);
+        console.error('Socket error:', data);
+      }
     });
 
     // Listen for server-side transcription (from Whisper)
     socket.on('transcription', (data: { transcript: string }) => {
+      console.log('Received Whisper transcription:', data.transcript);
       setLastTranscription(data.transcript);
     });
 

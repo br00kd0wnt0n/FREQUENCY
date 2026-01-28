@@ -113,17 +113,31 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   // Listen for server transcription (from Whisper) - add to chat log
   useEffect(() => {
     if (lastTranscription) {
+      console.log('Adding Whisper transcription to chat:', lastTranscription);
       addChatMessage('user', 'YOU', lastTranscription);
       clearTranscription();
     }
   }, [lastTranscription, clearTranscription]);
 
   // Listen for character responses - add to chat log
+  // Also add user message if we haven't already (fallback for when transcription event is missed)
+  const lastUserMessageRef = useRef<string | null>(null);
   useEffect(() => {
     if (!lastCharacterResponse) return;
     const responseId = lastCharacterResponse.characterId + lastCharacterResponse.transcript;
     if (responseId === lastResponseIdRef.current) return;
     lastResponseIdRef.current = responseId;
+
+    // If the character is responding but we never showed the user's message,
+    // check if we need to add a placeholder
+    const hasRecentUserMessage = chatLog.some(
+      m => m.role === 'user' && Date.now() - m.timestamp < 15000
+    );
+    if (!hasRecentUserMessage && lastUserMessageRef.current) {
+      // We missed showing the user message - this shouldn't happen often
+      addChatMessage('user', 'YOU', lastUserMessageRef.current);
+    }
+
     addChatMessage('character', characterCallsign || 'UNKNOWN', lastCharacterResponse.transcript);
   }, [lastCharacterResponse, characterCallsign]);
 
