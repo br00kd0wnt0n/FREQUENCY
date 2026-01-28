@@ -2,6 +2,7 @@ import { Socket } from 'socket.io';
 import { dialogueEngine } from '../services/DialogueEngine';
 import { frequencyManager } from '../services/FrequencyManager';
 import { narrativeEngine } from '../services/NarrativeEngine';
+import { openaiClient } from '../config/openai';
 import {
   PTTStartPayload,
   PTTEndPayload,
@@ -34,8 +35,25 @@ export async function handlePTTStart(socket: Socket, payload: PTTStartPayload): 
 }
 
 export async function handlePTTEnd(socket: Socket, payload: PTTEndPayload): Promise<void> {
-  const { frequency, transcript, audioBase64 } = payload;
+  const { frequency, transcript: providedTranscript, audioBase64 } = payload;
   const userId = socket.data.userId;
+
+  let transcript = providedTranscript || '';
+
+  // If no transcript but we have audio, transcribe it server-side with Whisper
+  if (!transcript.trim() && audioBase64) {
+    console.log(`User ${userId} PTT end - transcribing audio with Whisper...`);
+    try {
+      const audioBuffer = Buffer.from(audioBase64, 'base64');
+      transcript = await openaiClient.transcribeAudio(audioBuffer, 'audio.webm');
+      console.log(`Whisper transcription: "${transcript}"`);
+
+      // Send transcript back to client for display
+      socket.emit('transcription', { transcript });
+    } catch (error) {
+      console.error('Whisper transcription failed:', error);
+    }
+  }
 
   if (!transcript || transcript.trim().length === 0) {
     console.log(`User ${userId} PTT end with no transcript`);

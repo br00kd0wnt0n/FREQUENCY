@@ -23,6 +23,34 @@ export class OpenAIClient {
     }
   }
 
+  /**
+   * Transcribe audio using OpenAI Whisper API
+   * @param audioBuffer - Audio data as Buffer (webm, mp3, wav, etc.)
+   * @param filename - Filename with extension for format detection
+   */
+  async transcribeAudio(audioBuffer: Buffer, filename: string = 'audio.webm'): Promise<string> {
+    if (!this.client) {
+      console.warn('OpenAI not configured - cannot transcribe audio');
+      return '';
+    }
+
+    try {
+      // Create a File-like object for the API
+      const file = new File([audioBuffer], filename, { type: 'audio/webm' });
+
+      const transcription = await this.client.audio.transcriptions.create({
+        file,
+        model: 'whisper-1',
+        language: 'en',
+      });
+
+      return transcription.text || '';
+    } catch (error) {
+      console.error('Whisper transcription error:', error);
+      return '';
+    }
+  }
+
   async generateResponse(
     systemPrompt: string,
     messages: Array<{ role: string; content: string }>

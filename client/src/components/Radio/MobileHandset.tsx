@@ -16,6 +16,8 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   const [isLinked, setIsLinked] = useState(embedded); // Auto-link if embedded
   const [inputCode, setInputCode] = useState('');
   const [userTranscript, setUserTranscript] = useState<string | null>(null);
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInputValue, setTextInputValue] = useState('');
   const transcriptTimeoutRef = useRef<number | null>(null);
 
   const {
@@ -27,7 +29,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     lastCharacterResponse,
   } = useRadioStore();
 
-  const { connect, isConnected, pttStart, pttEnd } = useSocket();
+  const { connect, isConnected, pttStart, pttEnd, lastTranscription, clearTranscription } = useSocket();
   const { playSquelch, inputLevel, outputLevel, startInputMonitoring, stopInputMonitoring } = useAudioEngine();
 
   useEffect(() => {
@@ -67,13 +69,17 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
       pttStart(currentFrequency);
       startInputMonitoring(); // Start VU meter for mic input
     },
-    onEnd: (transcript) => {
+    onEnd: (transcript, audioBase64) => {
       stopInputMonitoring(); // Stop VU meter
       playSquelch();
-      pttEnd(currentFrequency, transcript);
+      // Send both transcript and audio - server will use Whisper if transcript is empty
+      pttEnd(currentFrequency, transcript, audioBase64);
       // Show user's final transcript in the display (will fade after 4s)
       if (transcript && transcript.trim()) {
         showUserTranscript(transcript);
+      } else if (audioBase64) {
+        // Show processing message if we have audio but no transcript
+        showUserTranscript('(Processing voice...)');
       }
     },
   });
@@ -99,6 +105,29 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
       window.removeEventListener('ptt-end', handlePTTEnd);
     };
   }, [isActive, startPTT, stopPTT]);
+
+  // Listen for server transcription (from Whisper)
+  useEffect(() => {
+    if (lastTranscription) {
+      showUserTranscript(lastTranscription);
+      clearTranscription();
+    }
+  }, [lastTranscription, clearTranscription]);
+
+  // Handle text input submission
+  const handleTextSubmit = () => {
+    if (!textInputValue.trim()) return;
+    playSquelch();
+    pttStart(currentFrequency);
+    // Send text directly (no audio needed)
+    setTimeout(() => {
+      playSquelch();
+      pttEnd(currentFrequency, textInputValue.trim());
+      showUserTranscript(textInputValue.trim());
+      setTextInputValue('');
+      setShowTextInput(false);
+    }, 100);
+  };
 
   // Character is listening if on voice channel
   const hasCharacter = broadcastType === 'voice' && characterCallsign;
@@ -236,21 +265,58 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
         {/* Giant PTT Button - always enabled */}
         <div className="ptt-area">
-          <button
-            className={`ptt-giant ${isActive ? 'active' : ''}`}
-            onMouseDown={startPTT}
-            onMouseUp={stopPTT}
-            onMouseLeave={stopPTT}
-            onTouchStart={(e) => { e.preventDefault(); startPTT(); }}
-            onTouchEnd={stopPTT}
-          >
-            <div className="ptt-inner">
-              <span className="ptt-label">PUSH TO TALK</span>
-              <span className="ptt-sublabel">
-                {isActive ? '● TRANSMITTING' : 'HOLD TO SPEAK'}
-              </span>
+          {showTextInput ? (
+            <div className="text-input-area">
+              <input
+                type="text"
+                className="text-input-field"
+                value={textInputValue}
+                onChange={(e) => setTextInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleTextSubmit()}
+                placeholder="Type your message..."
+                autoFocus
+              />
+              <div className="text-input-buttons">
+                <button
+                  className="text-send-btn"
+                  onClick={handleTextSubmit}
+                  disabled={!textInputValue.trim()}
+                >
+                  SEND
+                </button>
+                <button
+                  className="text-cancel-btn"
+                  onClick={() => { setShowTextInput(false); setTextInputValue(''); }}
+                >
+                  CANCEL
+                </button>
+              </div>
             </div>
-          </button>
+          ) : (
+            <>
+              <button
+                className={`ptt-giant ${isActive ? 'active' : ''}`}
+                onMouseDown={startPTT}
+                onMouseUp={stopPTT}
+                onMouseLeave={stopPTT}
+                onTouchStart={(e) => { e.preventDefault(); startPTT(); }}
+                onTouchEnd={stopPTT}
+              >
+                <div className="ptt-inner">
+                  <span className="ptt-label">PUSH TO TALK</span>
+                  <span className="ptt-sublabel">
+                    {isActive ? '● TRANSMITTING' : 'HOLD TO SPEAK'}
+                  </span>
+                </div>
+              </button>
+              <button
+                className="text-fallback-btn"
+                onClick={() => setShowTextInput(true)}
+              >
+                TYPE INSTEAD
+              </button>
+            </>
+          )}
         </div>
 
         {/* User transcript LED display - shows live when transmitting, final after release */}

@@ -4,25 +4,35 @@ interface NotebookPanelProps {
   onClose?: () => void;
 }
 
-type TabType = 'frequencies' | 'characters' | 'signals' | 'scratchpad';
-
 export function NotebookPanel({ onClose }: NotebookPanelProps) {
-  const { entries, activeTab, setActiveTab, scratchpadContent, setScratchpadContent } = useNotebookStore();
+  const { entries, scratchpadContent, setScratchpadContent } = useNotebookStore();
 
-  const tabs: { id: TabType; label: string }[] = [
-    { id: 'scratchpad', label: 'NOTES' },
-    { id: 'frequencies', label: 'FREQ' },
-    { id: 'characters', label: 'CONTACTS' },
-    { id: 'signals', label: 'SIGNALS' },
-  ];
+  // Filter entries by type
+  const noteEntries = entries.filter(e => e.entry_type === 'note');
+  const frequencyEntries = entries.filter(e => e.entry_type === 'frequency');
+  const characterEntries = entries.filter(e => e.entry_type === 'character');
+  const signalEntries = entries.filter(e => e.entry_type === 'signal');
 
-  const filteredEntries = entries.filter((entry) => {
-    if (activeTab === 'frequencies') return entry.entry_type === 'frequency';
-    if (activeTab === 'characters') return entry.entry_type === 'character';
-    if (activeTab === 'signals') return entry.entry_type === 'signal';
-    if (activeTab === 'scratchpad') return entry.entry_type === 'note';
-    return false;
-  });
+  const renderEntries = (items: typeof entries, emptyMessage: string) => {
+    if (items.length === 0) {
+      return <div className="quadrant-empty">{emptyMessage}</div>;
+    }
+    return items.map((entry) => (
+      <div key={entry.id} className={`notebook-entry ${entry.is_pinned ? 'pinned' : ''}`}>
+        <div className="notebook-entry-header">
+          <span className="notebook-entry-title">
+            {entry.is_pinned && '📌 '}{entry.title}
+          </span>
+          {entry.frequency_ref && (
+            <span className="notebook-entry-freq">{entry.frequency_ref.toFixed(3)} MHz</span>
+          )}
+        </div>
+        {entry.content && (
+          <div className="notebook-entry-content">{entry.content}</div>
+        )}
+      </div>
+    ));
+  };
 
   return (
     <div className="notebook-panel">
@@ -35,70 +45,44 @@ export function NotebookPanel({ onClose }: NotebookPanelProps) {
         )}
       </div>
 
-      <div className="notebook-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`notebook-tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="notebook-content">
-        {activeTab === 'scratchpad' ? (
-          <div className="scratchpad-container">
-            {/* Show note entries (starter hints) */}
-            {filteredEntries.length > 0 && (
-              <div className="scratchpad-notes">
-                {filteredEntries.map((entry) => (
-                  <div key={entry.id} className={`notebook-entry ${entry.is_pinned ? 'pinned' : ''}`}>
-                    <div className="notebook-entry-header">
-                      <span className="notebook-entry-title">
-                        {entry.is_pinned && '📌 '}{entry.title}
-                      </span>
-                      {entry.frequency_ref && (
-                        <span className="notebook-entry-freq">{entry.frequency_ref.toFixed(3)} MHz</span>
-                      )}
-                    </div>
-                    {entry.content && (
-                      <div className="notebook-entry-content">{entry.content}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* User's own notes */}
+      <div className="notebook-quadrants">
+        {/* Top Left - Notes/Leads */}
+        <div className="notebook-quadrant notes">
+          <div className="quadrant-header">NOTES & LEADS</div>
+          <div className="quadrant-content">
+            {renderEntries(noteEntries, 'No notes yet...')}
             <textarea
               className="scratchpad-textarea"
               value={scratchpadContent}
               onChange={(e) => setScratchpadContent(e.target.value)}
-              placeholder="Jot down your own notes here..."
+              placeholder="Jot down notes..."
             />
           </div>
-        ) : filteredEntries.length === 0 ? (
-          <div className="notebook-empty">
-            {activeTab === 'frequencies' && 'No frequencies logged yet. Scan the dial to find signals.'}
-            {activeTab === 'characters' && 'No contacts made yet. Find a voice on the radio.'}
-            {activeTab === 'signals' && 'No signals decoded yet. Listen for morse or numbers.'}
+        </div>
+
+        {/* Top Right - Frequencies */}
+        <div className="notebook-quadrant frequencies">
+          <div className="quadrant-header">FREQUENCIES</div>
+          <div className="quadrant-content">
+            {renderEntries(frequencyEntries, 'Scan the dial to find signals...')}
           </div>
-        ) : (
-          filteredEntries.map((entry) => (
-            <div key={entry.id} className="notebook-entry">
-              <div className="notebook-entry-header">
-                <span className="notebook-entry-title">{entry.title}</span>
-                {entry.frequency_ref && (
-                  <span className="notebook-entry-freq">{entry.frequency_ref.toFixed(3)} MHz</span>
-                )}
-              </div>
-              {entry.content && (
-                <div className="notebook-entry-content">{entry.content}</div>
-              )}
-            </div>
-          ))
-        )}
+        </div>
+
+        {/* Bottom Left - Contacts */}
+        <div className="notebook-quadrant contacts">
+          <div className="quadrant-header">CONTACTS</div>
+          <div className="quadrant-content">
+            {renderEntries(characterEntries, 'Find a voice on the radio...')}
+          </div>
+        </div>
+
+        {/* Bottom Right - Signals */}
+        <div className="notebook-quadrant signals">
+          <div className="quadrant-header">SIGNALS</div>
+          <div className="quadrant-content">
+            {renderEntries(signalEntries, 'Listen for morse or numbers...')}
+          </div>
+        </div>
       </div>
     </div>
   );

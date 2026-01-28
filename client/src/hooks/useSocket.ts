@@ -19,6 +19,7 @@ export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastTranscription, setLastTranscription] = useState<string | null>(null);
 
   const { setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse } = useRadioStore();
   const { setEntries } = useNotebookStore();
@@ -75,6 +76,11 @@ export function useSocket() {
       console.error('Socket error:', data);
     });
 
+    // Listen for server-side transcription (from Whisper)
+    socket.on('transcription', (data: { transcript: string }) => {
+      setLastTranscription(data.transcript);
+    });
+
     return () => {
       socketService.disconnect();
     };
@@ -96,19 +102,25 @@ export function useSocket() {
     socketService.emit(SocketEvents.PTT_START, { frequency });
   }, []);
 
-  const pttEnd = useCallback((frequency: number, transcript: string) => {
-    socketService.emit(SocketEvents.PTT_END, { frequency, transcript });
+  const pttEnd = useCallback((frequency: number, transcript: string, audioBase64?: string) => {
+    socketService.emit(SocketEvents.PTT_END, { frequency, transcript, audioBase64 });
+  }, []);
+
+  const clearTranscription = useCallback(() => {
+    setLastTranscription(null);
   }, []);
 
   return {
     isConnected,
     userId,
     error,
+    lastTranscription,
     connect,
     tune,
     startScan,
     stopScan,
     pttStart,
     pttEnd,
+    clearTranscription,
   };
 }
