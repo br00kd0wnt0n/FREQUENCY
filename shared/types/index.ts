@@ -184,6 +184,8 @@ export interface TunedEvent {
   characterId?: string;
   characterCallsign?: string;
   signalId?: string;
+  signalContent?: string;
+  signalEncoded?: string;
   staticLevel: number;
 }
 

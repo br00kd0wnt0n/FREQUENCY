@@ -280,78 +280,62 @@ export function useAudioEngine() {
     }
   }, []);
 
-  // Play numbers station (synthesized voice reading numbers)
-  const playNumbers = useCallback((numbers: string, volume: number = 0.4) => {
-    // Initialize audio context
-    initAudioContext();
+  // Number words for speech synthesis
+  const DIGIT_WORDS: Record<string, string> = {
+    '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four',
+    '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine',
+  };
 
-    // Stop any existing numbers
+  // Play numbers station (speech synthesis reading numbers)
+  const playNumbers = useCallback((numbers: string, volume: number = 0.4) => {
+    initAudioContext();
     stopNumbers();
 
-    // Create a simple tone-based numbers effect
-    // Each number is a different frequency pattern
-    const numberFreqs: Record<string, number[]> = {
-      '0': [300, 300], '1': [350, 250], '2': [400, 300], '3': [450, 350],
-      '4': [500, 400], '5': [550, 450], '6': [600, 500], '7': [650, 550],
-      '8': [700, 600], '9': [750, 650], '-': [200, 200]
+    // Extract just the digits
+    const digits = numbers.split('').filter(d => d >= '0' && d <= '9');
+
+    const speakSequence = () => {
+      if (!window.speechSynthesis) return;
+
+      // Build the text: each number spoken individually with pauses
+      const text = digits.map(d => DIGIT_WORDS[d] || d).join('. . . ');
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.6;
+      utterance.pitch = 0.3;
+      utterance.volume = Math.min(1, volume * 2);
+
+      // Try to pick a robotic-sounding voice
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v =>
+        v.name.includes('Google') && v.lang.startsWith('en')
+      ) || voices.find(v => v.lang.startsWith('en'));
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      window.speechSynthesis.speak(utterance);
     };
 
-    const digits = numbers.split('');
+    // Voices may not be loaded yet
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        speakSequence();
+      };
+    } else {
+      speakSequence();
+    }
 
-    const playSequence = () => {
-      if (!audioContextRef.current) return;
-
-      let seqTime = audioContextRef.current.currentTime;
-
-      for (const digit of digits) {
-        const freqs = numberFreqs[digit] || [300, 300];
-
-        // Create oscillator for each digit
-        const osc = audioContextRef.current.createOscillator();
-        const gain = audioContextRef.current.createGain();
-        const filter = audioContextRef.current.createBiquadFilter();
-
-        osc.type = 'sawtooth';
-        filter.type = 'lowpass';
-        filter.frequency.value = 1500;
-
-        osc.connect(filter);
-        filter.connect(gain);
-
-        // Route through master output if available for VU monitoring
-        if (masterGainRef.current) {
-          gain.connect(masterGainRef.current);
-        } else {
-          gain.connect(audioContextRef.current.destination);
-        }
-
-        // Two-tone for each digit
-        osc.frequency.setValueAtTime(freqs[0], seqTime);
-        osc.frequency.setValueAtTime(freqs[1], seqTime + 0.15);
-
-        gain.gain.setValueAtTime(0, seqTime);
-        gain.gain.linearRampToValueAtTime(volume, seqTime + 0.05);
-        gain.gain.setValueAtTime(volume, seqTime + 0.25);
-        gain.gain.linearRampToValueAtTime(0, seqTime + 0.3);
-
-        osc.start(seqTime);
-        osc.stop(seqTime + 0.35);
-
-        seqTime += digit === '-' ? 0.5 : 0.4;
-      }
-    };
-
-    playSequence();
-
-    // Loop the numbers
-    const totalDuration = digits.length * 400 + 3000;
-    numbersIntervalRef.current = window.setInterval(playSequence, totalDuration);
+    // Loop the numbers with gap
+    const estimatedDuration = digits.length * 1200 + 3000;
+    numbersIntervalRef.current = window.setInterval(speakSequence, estimatedDuration);
   }, [initAudioContext]);
 
   const stopNumbers = useCallback(() => {
     if (numbersIntervalRef.current) {
       clearInterval(numbersIntervalRef.current);
       numbersIntervalRef.current = null;
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
     }
   }, []);
 

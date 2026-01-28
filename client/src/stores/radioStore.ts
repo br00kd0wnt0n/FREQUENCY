@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { TunedEvent, ScanUpdateEvent, CharacterAudioEvent } from '@frequency/shared';
 
+export interface ConversationMessage {
+  id: string;
+  role: 'user' | 'character';
+  callsign: string;
+  text: string;
+  timestamp: number;
+}
+
 interface RadioState {
   currentFrequency: number;
   broadcastType: string | null;
@@ -8,6 +16,8 @@ interface RadioState {
   characterId: string | null;
   characterCallsign: string | null;
   signalId: string | null;
+  signalContent: string | null;
+  signalEncoded: string | null;
   staticLevel: number;
   isScanning: boolean;
   scanDirection: 'up' | 'down' | null;
@@ -17,6 +27,7 @@ interface RadioState {
   lastCharacterResponse: CharacterAudioEvent | null;
   volume: number;
   isAudioInitialized: boolean;
+  conversationLog: ConversationMessage[];
 
   // Actions
   setFrequency: (frequency: number) => void;
@@ -29,6 +40,8 @@ interface RadioState {
   setCharacterResponse: (response: CharacterAudioEvent | null) => void;
   setVolume: (volume: number) => void;
   setAudioInitialized: (initialized: boolean) => void;
+  addConversationMessage: (role: 'user' | 'character', callsign: string, text: string) => void;
+  clearConversationLog: () => void;
 }
 
 export const useRadioStore = create<RadioState>((set) => ({
@@ -38,7 +51,10 @@ export const useRadioStore = create<RadioState>((set) => ({
   characterId: null,
   characterCallsign: null,
   signalId: null,
+  signalContent: null,
+  signalEncoded: null,
   staticLevel: 0.9,
+  conversationLog: [],
   isScanning: false,
   scanDirection: null,
   signalStrength: 0,
@@ -71,6 +87,8 @@ export const useRadioStore = create<RadioState>((set) => ({
       characterId: event.characterId || null,
       characterCallsign: event.characterCallsign || null,
       signalId: event.signalId || null,
+      signalContent: event.signalContent || null,
+      signalEncoded: event.signalEncoded || null,
       staticLevel: event.staticLevel,
     }),
 
@@ -95,4 +113,20 @@ export const useRadioStore = create<RadioState>((set) => ({
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
 
   setAudioInitialized: (initialized) => set({ isAudioInitialized: initialized }),
+
+  addConversationMessage: (role, callsign, text) =>
+    set((state) => {
+      if (!text || !text.trim()) return state;
+      return {
+        conversationLog: [...state.conversationLog, {
+          id: `${Date.now()}-${Math.random()}`,
+          role,
+          callsign,
+          text: text.trim(),
+          timestamp: Date.now(),
+        }],
+      };
+    }),
+
+  clearConversationLog: () => set({ conversationLog: [] }),
 }));

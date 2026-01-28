@@ -7,14 +7,6 @@ import { useAudioEngine } from '../../hooks/useAudioEngine';
 // VU meter segment thresholds
 const VU_SEGMENTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'character';
-  callsign: string;
-  text: string;
-  timestamp: number;
-}
-
 interface MobileHandsetProps {
   embedded?: boolean; // Skip link screen when embedded in desktop view
 }
@@ -23,7 +15,6 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   const [sessionCode, setSessionCode] = useState('');
   const [isLinked, setIsLinked] = useState(embedded); // Auto-link if embedded
   const [inputCode, setInputCode] = useState('');
-  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInputValue, setTextInputValue] = useState('');
   const chatLogRef = useRef<HTMLDivElement>(null);
@@ -36,6 +27,8 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     staticLevel,
     isCharacterThinking,
     lastCharacterResponse,
+    conversationLog,
+    addConversationMessage,
   } = useRadioStore();
 
   const { connect, isConnected, pttStart, pttEnd, lastTranscription, clearTranscription } = useSocket();
@@ -57,24 +50,12 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     }
   };
 
-  // Add a message to the chat log
-  const addChatMessage = (role: 'user' | 'character', callsign: string, text: string) => {
-    if (!text || !text.trim()) return;
-    setChatLog(prev => [...prev, {
-      id: `${Date.now()}-${Math.random()}`,
-      role,
-      callsign,
-      text: text.trim(),
-      timestamp: Date.now(),
-    }]);
-  };
-
   // Auto-scroll chat log
   useEffect(() => {
     if (chatLogRef.current) {
       chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
     }
-  }, [chatLog, isCharacterThinking]);
+  }, [conversationLog, isCharacterThinking]);
 
   const { isActive, interimTranscript, startPTT, stopPTT } = usePTT({
     onStart: () => {
@@ -88,7 +69,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
       pttEnd(currentFrequency, transcript, audioBase64);
       // If we got a client-side transcript, add it to chat immediately
       if (transcript && transcript.trim()) {
-        addChatMessage('user', 'YOU', transcript);
+        addConversationMessage('user', 'YOU', transcript);
       }
       // If no transcript but audio was sent, server will transcribe with Whisper
     },
@@ -114,7 +95,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   useEffect(() => {
     if (lastTranscription) {
       console.log('Adding Whisper transcription to chat:', lastTranscription);
-      addChatMessage('user', 'YOU', lastTranscription);
+      addConversationMessage('user', 'YOU', lastTranscription);
       clearTranscription();
     }
   }, [lastTranscription, clearTranscription]);
@@ -130,15 +111,15 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
     // If the character is responding but we never showed the user's message,
     // check if we need to add a placeholder
-    const hasRecentUserMessage = chatLog.some(
+    const hasRecentUserMessage = conversationLog.some(
       m => m.role === 'user' && Date.now() - m.timestamp < 15000
     );
     if (!hasRecentUserMessage && lastUserMessageRef.current) {
       // We missed showing the user message - this shouldn't happen often
-      addChatMessage('user', 'YOU', lastUserMessageRef.current);
+      addConversationMessage('user', 'YOU', lastUserMessageRef.current);
     }
 
-    addChatMessage('character', characterCallsign || 'UNKNOWN', lastCharacterResponse.transcript);
+    addConversationMessage('character', characterCallsign || 'UNKNOWN', lastCharacterResponse.transcript);
   }, [lastCharacterResponse, characterCallsign]);
 
   // Handle text input submission
@@ -150,7 +131,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     setTimeout(() => {
       playSquelch();
       pttEnd(currentFrequency, text);
-      addChatMessage('user', 'YOU', text);
+      addConversationMessage('user', 'YOU', text);
       setTextInputValue('');
       setShowTextInput(false);
     }, 100);
@@ -255,14 +236,14 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
         {/* Chat log - scrollable conversation history */}
         <div className="chat-log" ref={chatLogRef}>
-          {chatLog.length === 0 && !isActive && (
+          {conversationLog.length === 0 && !isActive && (
             <div className="chat-empty">
               {hasCharacter
                 ? `${characterCallsign} is listening. Hold to talk.`
                 : 'Tune to a voice frequency to talk.'}
             </div>
           )}
-          {chatLog.map((msg) => (
+          {conversationLog.map((msg) => (
             <div key={msg.id} className={`chat-message ${msg.role}`}>
               <span className="chat-callsign">{msg.callsign}:</span>
               <span className="chat-text">{msg.text}</span>

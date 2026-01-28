@@ -32,6 +32,8 @@ function App() {
     label,
     characterCallsign,
     currentFrequency,
+    signalContent,
+    signalEncoded,
   } = useRadioStore();
   const { isMobileDevice, sessionCode } = useDeviceStore();
   const { entries, addEntry } = useNotebookStore();
@@ -100,8 +102,9 @@ function App() {
       // Play morse code - using "THE TOWER REMEMBERS" as default
       playMorse('THE TOWER REMEMBERS', volume * 0.4);
     } else if (broadcastType === 'numbers') {
-      // Play numbers station
-      playNumbers('7-3-9-1-4-2-8', volume * 0.5);
+      // Play numbers station - use signal content from server if available
+      const numbersSequence = useRadioStore.getState().signalContent || '7-3-9-1-4-2-8';
+      playNumbers(numbersSequence, volume * 0.5);
     }
 
     return () => {
@@ -152,21 +155,24 @@ function App() {
         content: `Made contact at ${currentFrequency.toFixed(3)} MHz`,
       });
     } else if (broadcastType === 'morse') {
+      const morseContent = signalContent ? `Message: "${signalContent}"` : 'Morse code detected';
+      const morseEncoded = signalEncoded ? `\nPattern: ${signalEncoded}` : '';
       addEntry({
         ...baseEntry,
         entry_type: 'signal',
         title: label || 'Morse Signal',
-        content: `Morse code detected at ${currentFrequency.toFixed(3)} MHz`,
+        content: `${morseContent} at ${currentFrequency.toFixed(3)} MHz${morseEncoded}`,
       });
     } else if (broadcastType === 'numbers') {
+      const numbersContent = signalContent ? `Sequence: ${signalContent}` : 'Numbers station detected';
       addEntry({
         ...baseEntry,
         entry_type: 'signal',
         title: label || 'Numbers Station',
-        content: `Numbers station detected at ${currentFrequency.toFixed(3)} MHz`,
+        content: `${numbersContent} at ${currentFrequency.toFixed(3)} MHz`,
       });
     }
-  }, [broadcastType, currentFrequency, characterCallsign, label, entries, addEntry]);
+  }, [broadcastType, currentFrequency, characterCallsign, label, signalContent, signalEncoded, entries, addEntry]);
 
   // Play character audio when response comes in
   useEffect(() => {

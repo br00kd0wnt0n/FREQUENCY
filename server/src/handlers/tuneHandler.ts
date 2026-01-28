@@ -28,6 +28,8 @@ export async function handleTune(socket: Socket, payload: TunePayload): Promise<
       characterId: info.character?.id,
       characterCallsign: info.character?.callsign,
       signalId: info.signal?.id,
+      signalContent: info.signal?.content_text || undefined,
+      signalEncoded: info.signal?.content_encoded || undefined,
       staticLevel: Number(info.frequency.static_level),
     };
 

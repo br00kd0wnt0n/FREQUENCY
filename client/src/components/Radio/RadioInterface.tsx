@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { FrequencyDial } from './FrequencyDial';
 import { PTTButton } from './PTTButton';
 import { SignalMeter } from './SignalMeter';
@@ -25,8 +26,16 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
     staticLevel,
     isScanning,
     isCharacterThinking,
-    lastCharacterResponse,
+    conversationLog,
   } = useRadioStore();
+
+  const chatLogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [conversationLog, isCharacterThinking]);
 
   const { tune, pttStart, pttEnd } = useSocket();
   const { isHandsetConnected } = useDeviceStore();
@@ -153,18 +162,19 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
           />
         </div>
 
-        {/* Character Response Area */}
-        {(lastCharacterResponse || isCharacterThinking) && (
-          <div className="character-response">
-            <div className="character-response-header">
-              <span className="character-callsign">{characterCallsign}</span>
-              {isCharacterThinking && (
-                <span className="character-thinking">● RECEIVING...</span>
-              )}
-            </div>
-            {lastCharacterResponse && !isCharacterThinking && (
-              <div className="character-transcript">
-                "{lastCharacterResponse.transcript}"
+        {/* Conversation Log */}
+        {(conversationLog.length > 0 || isCharacterThinking) && (
+          <div className="radio-chat-log" ref={chatLogRef}>
+            {conversationLog.map((msg) => (
+              <div key={msg.id} className={`radio-chat-message ${msg.role}`}>
+                <span className="radio-chat-callsign">{msg.callsign}:</span>
+                <span className="radio-chat-text">{msg.text}</span>
+              </div>
+            ))}
+            {isCharacterThinking && (
+              <div className="radio-chat-message character thinking">
+                <span className="radio-chat-callsign">{characterCallsign}:</span>
+                <span className="radio-chat-text thinking-dots">...</span>
               </div>
             )}
           </div>
