@@ -4,6 +4,7 @@ import { NotebookPanel } from './components/Notebook/NotebookPanel';
 import { MobileHandset } from './components/Radio/MobileHandset';
 import { ConnectPhone } from './components/shared/ConnectPhone';
 import { useSocket } from './hooks/useSocket';
+import { usePTT } from './hooks/usePTT';
 import { useRadioStore } from './stores/radioStore';
 import { useDeviceStore } from './stores/deviceStore';
 import { useNotebookStore } from './stores/notebookStore';
@@ -43,10 +44,13 @@ function App() {
     playMorse,
     playNumbers,
     stopSignalAudio,
+    outputLevel,
+    startOutputMonitoring,
   } = useAudioEngine();
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
   const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
-  const [isPTTActive, setIsPTTActive] = useState(false);
+  const [spacebarTranscript, setSpacebarTranscript] = useState<string | null>(null);
+  const spacebarTranscriptTimeoutRef = useRef<number | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const scanDirectionRef = useRef<'up' | 'down' | null>(null);
   const lastCharacterResponseRef = useRef<string | null>(null);
@@ -54,6 +58,28 @@ function App() {
 
   // Check if PTT is allowed (tuned to voice frequency)
   const canTalk = broadcastType === 'voice' && !!characterCallsign;
+
+  // Spacebar PTT with speech recognition
+  const { isActive: isSpacebarPTT, interimTranscript: spacebarInterim, startPTT: startSpacebarPTT, stopPTT: stopSpacebarPTT } = usePTT({
+    onStart: () => {
+      playSquelch();
+      pttStart(currentFrequency);
+    },
+    onEnd: (transcript) => {
+      playSquelch();
+      pttEnd(currentFrequency, transcript);
+      // Show final transcript briefly
+      if (transcript && transcript.trim()) {
+        setSpacebarTranscript(transcript);
+        if (spacebarTranscriptTimeoutRef.current) {
+          clearTimeout(spacebarTranscriptTimeoutRef.current);
+        }
+        spacebarTranscriptTimeoutRef.current = window.setTimeout(() => {
+          setSpacebarTranscript(null);
+        }, 4000);
+      }
+    },
+  });
 
   useEffect(() => {
     connect();
@@ -64,6 +90,7 @@ function App() {
     if (isAudioInitialized) return;
 
     const initAudio = () => {
+      startOutputMonitoring(); // Start VU meter monitoring first (creates master gain node)
       playStaticNoise(staticLevel * volume);
       setAudioInitialized(true);
       playSquelch(); // Initial squelch sound
@@ -82,7 +109,7 @@ function App() {
       window.removeEventListener('keydown', initAudio);
       window.removeEventListener('touchstart', initAudio);
     };
-  }, [isAudioInitialized, playStaticNoise, playSquelch, setAudioInitialized, staticLevel, volume]);
+  }, [isAudioInitialized, playStaticNoise, playSquelch, setAudioInitialized, staticLevel, volume, startOutputMonitoring]);
 
   // Update static level when it changes (from tuning)
   useEffect(() => {
@@ -263,12 +290,9 @@ function App() {
         tune(Math.round(newFreq * 1000) / 1000);
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        // Spacebar for PTT - show indicator even if can't talk
-        if (!isPTTActive) {
-          setIsPTTActive(true);
-          if (canTalk) {
-            pttStart(currentFrequency);
-          }
+        // Spacebar for PTT with speech recognition
+        if (!isSpacebarPTT) {
+          startSpacebarPTT();
         }
       }
     };
@@ -283,12 +307,8 @@ function App() {
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         // Release PTT
-        if (isPTTActive) {
-          setIsPTTActive(false);
-          if (canTalk) {
-            // For now, send empty transcript - in future this would be from speech recognition
-            pttEnd(currentFrequency, '');
-          }
+        if (isSpacebarPTT) {
+          stopSpacebarPTT();
         }
       }
     };
@@ -304,7 +324,7 @@ function App() {
         clearInterval(scanIntervalRef.current);
       }
     };
-  }, [isMobileDevice, startLocalScan, stopLocalScan, setFrequency, tune, canTalk, isPTTActive, isAudioInitialized, playSquelch, pttStart, pttEnd, currentFrequency]);
+  }, [isMobileDevice, startLocalScan, stopLocalScan, setFrequency, tune, isSpacebarPTT, startSpacebarPTT, stopSpacebarPTT]);
 
   // Mobile handset view
   if (isMobileDevice) {
@@ -326,7 +346,7 @@ function App() {
 
       <main className="app-main desktop-layout three-column">
         <div className="radio-section">
-          <RadioInterface showPTT={false} activeTuneButton={activeTuneButton} />
+          <RadioInterface showPTT={false} activeTuneButton={activeTuneButton} outputLevel={outputLevel} />
         </div>
         <div className="notebook-section">
           <NotebookPanel />
@@ -344,9 +364,12 @@ function App() {
           <span><kbd>↑</kbd> <kbd>↓</kbd> Fine tune</span>
           <span className={canTalk ? '' : 'disabled'}><kbd>Space</kbd> Push to talk</span>
         </div>
-        {isPTTActive && (
-          <div className={`ptt-active-indicator ${!canTalk ? 'no-channel' : ''}`}>
-            {canTalk ? '● TRANSMITTING' : '● NO VOICE CHANNEL - Tune to find one'}
+        {(isSpacebarPTT || spacebarTranscript) && (
+          <div className={`ptt-active-indicator ${isSpacebarPTT ? 'transmitting' : ''}`}>
+            {isSpacebarPTT
+              ? `● TRANSMITTING: ${spacebarInterim || '...listening...'}`
+              : `"${spacebarTranscript}"`
+            }
           </div>
         )}
       </footer>

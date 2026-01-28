@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 
 // Morse code timing (in units, 1 unit = 60ms at 20 WPM)
 const MORSE_UNIT = 60;
@@ -20,6 +20,20 @@ export function useAudioEngine() {
   const morseGainRef = useRef<GainNode | null>(null);
   const morseIntervalRef = useRef<number | null>(null);
   const numbersIntervalRef = useRef<number | null>(null);
+
+  // VU meter analyzers
+  const inputAnalyserRef = useRef<AnalyserNode | null>(null);
+  const outputAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const vuAnimationRef = useRef<number | null>(null);
+
+  // VU meter levels (0-1)
+  const [inputLevel, setInputLevel] = useState(0);
+  const [outputLevel, setOutputLevel] = useState(0);
+
+  // Output gain node for monitoring all audio output
+  const masterGainRef = useRef<GainNode | null>(null);
 
   const initAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -61,10 +75,16 @@ export function useAudioEngine() {
     filter.frequency.value = 1000;
     filter.Q.value = 0.5;
 
-    // Connect chain
+    // Connect chain - route through master output if available for VU monitoring
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(ctx.destination);
+
+    // Connect to master gain if it exists (for VU meter), otherwise to destination
+    if (masterGainRef.current) {
+      gain.connect(masterGainRef.current);
+    } else {
+      gain.connect(ctx.destination);
+    }
 
     source.start();
     staticSourceRef.current = source;
@@ -102,7 +122,13 @@ export function useAudioEngine() {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
 
     oscillator.connect(gain);
-    gain.connect(ctx.destination);
+
+    // Route through master output if available for VU monitoring
+    if (masterGainRef.current) {
+      gain.connect(masterGainRef.current);
+    } else {
+      gain.connect(ctx.destination);
+    }
 
     oscillator.start();
     oscillator.stop(ctx.currentTime + 0.1);
@@ -141,7 +167,13 @@ export function useAudioEngine() {
     filter.Q.value = 1;
 
     source.connect(filter);
-    filter.connect(ctx.destination);
+
+    // Route through master output if available for VU monitoring
+    if (masterGainRef.current) {
+      filter.connect(masterGainRef.current);
+    } else {
+      filter.connect(ctx.destination);
+    }
 
     source.start();
 
@@ -172,7 +204,13 @@ export function useAudioEngine() {
 
     oscillator.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+
+    // Route through master output if available for VU monitoring
+    if (masterGainRef.current) {
+      gainNode.connect(masterGainRef.current);
+    } else {
+      gainNode.connect(ctx.destination);
+    }
 
     gainNode.gain.value = 0; // Start silent
     oscillator.start();
@@ -279,7 +317,13 @@ export function useAudioEngine() {
 
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(audioContextRef.current.destination);
+
+        // Route through master output if available for VU monitoring
+        if (masterGainRef.current) {
+          gain.connect(masterGainRef.current);
+        } else {
+          gain.connect(audioContextRef.current.destination);
+        }
 
         // Two-tone for each digit
         osc.frequency.setValueAtTime(freqs[0], seqTime);
@@ -317,16 +361,152 @@ export function useAudioEngine() {
     stopNumbers();
   }, [stopMorse, stopNumbers]);
 
+  // VU meter animation loop
+  const updateVuMeters = useCallback(() => {
+    // Input level (microphone)
+    if (inputAnalyserRef.current) {
+      const dataArray = new Uint8Array(inputAnalyserRef.current.frequencyBinCount);
+      inputAnalyserRef.current.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      setInputLevel(Math.min(1, average / 128)); // Normalize to 0-1
+    } else {
+      setInputLevel(0);
+    }
+
+    // Output level (speaker)
+    if (outputAnalyserRef.current) {
+      const dataArray = new Uint8Array(outputAnalyserRef.current.frequencyBinCount);
+      outputAnalyserRef.current.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      setOutputLevel(Math.min(1, average / 128)); // Normalize to 0-1
+    } else {
+      setOutputLevel(0);
+    }
+
+    vuAnimationRef.current = requestAnimationFrame(updateVuMeters);
+  }, []);
+
+  // Start VU meter monitoring
+  const startVuMonitoring = useCallback(() => {
+    if (vuAnimationRef.current) return; // Already running
+    updateVuMeters();
+  }, [updateVuMeters]);
+
+  // Stop VU meter monitoring
+  const stopVuMonitoring = useCallback(() => {
+    if (vuAnimationRef.current) {
+      cancelAnimationFrame(vuAnimationRef.current);
+      vuAnimationRef.current = null;
+    }
+    setInputLevel(0);
+    setOutputLevel(0);
+  }, []);
+
+  // Start input (microphone) monitoring for VU meter
+  const startInputMonitoring = useCallback(async () => {
+    const ctx = initAudioContext();
+
+    try {
+      // Get microphone stream
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+
+      // Create source from mic
+      const source = ctx.createMediaStreamSource(stream);
+      micSourceRef.current = source;
+
+      // Create analyser for input level
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      inputAnalyserRef.current = analyser;
+
+      // Connect mic to analyser (but not to output - we don't want feedback)
+      source.connect(analyser);
+
+      // Start the VU animation if not already running
+      startVuMonitoring();
+    } catch (err) {
+      console.error('Failed to access microphone for VU meter:', err);
+    }
+  }, [initAudioContext, startVuMonitoring]);
+
+  // Stop input monitoring
+  const stopInputMonitoring = useCallback(() => {
+    if (micSourceRef.current) {
+      micSourceRef.current.disconnect();
+      micSourceRef.current = null;
+    }
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+    if (inputAnalyserRef.current) {
+      inputAnalyserRef.current.disconnect();
+      inputAnalyserRef.current = null;
+    }
+    setInputLevel(0);
+  }, []);
+
+  // Start output monitoring for VU meter
+  const startOutputMonitoring = useCallback(() => {
+    const ctx = initAudioContext();
+
+    // Create analyser for output level
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    outputAnalyserRef.current = analyser;
+
+    // Create master gain if not exists
+    if (!masterGainRef.current) {
+      masterGainRef.current = ctx.createGain();
+      masterGainRef.current.gain.value = 1;
+    }
+
+    // Connect master gain through analyser to destination
+    masterGainRef.current.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    // Start the VU animation if not already running
+    startVuMonitoring();
+
+    // Return the master gain node for other audio to connect to
+    return masterGainRef.current;
+  }, [initAudioContext, startVuMonitoring]);
+
+  // Stop output monitoring
+  const stopOutputMonitoring = useCallback(() => {
+    if (outputAnalyserRef.current) {
+      outputAnalyserRef.current.disconnect();
+      outputAnalyserRef.current = null;
+    }
+    setOutputLevel(0);
+  }, []);
+
+  // Get the master output node (for connecting audio sources to monitored output)
+  const getMasterOutput = useCallback(() => {
+    if (masterGainRef.current) {
+      return masterGainRef.current;
+    }
+    // If no master output yet, connect directly to destination
+    const ctx = initAudioContext();
+    return ctx.destination;
+  }, [initAudioContext]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopStatic();
       stopSignalAudio();
+      stopVuMonitoring();
+      stopInputMonitoring();
+      stopOutputMonitoring();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
-  }, [stopStatic, stopSignalAudio]);
+  }, [stopStatic, stopSignalAudio, stopVuMonitoring, stopInputMonitoring, stopOutputMonitoring]);
 
   return {
     initAudioContext,
@@ -340,5 +520,13 @@ export function useAudioEngine() {
     playNumbers,
     stopNumbers,
     stopSignalAudio,
+    // VU meter functions and state
+    inputLevel,
+    outputLevel,
+    startInputMonitoring,
+    stopInputMonitoring,
+    startOutputMonitoring,
+    stopOutputMonitoring,
+    getMasterOutput,
   };
 }

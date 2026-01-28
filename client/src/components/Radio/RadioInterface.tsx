@@ -11,9 +11,10 @@ const MAX_FREQ = 32.000;
 interface RadioInterfaceProps {
   showPTT?: boolean;
   activeTuneButton?: 'up' | 'down' | null;
+  outputLevel?: number;
 }
 
-export function RadioInterface({ showPTT = true, activeTuneButton = null }: RadioInterfaceProps) {
+export function RadioInterface({ showPTT = true, activeTuneButton = null, outputLevel = 0 }: RadioInterfaceProps) {
   const {
     currentFrequency,
     broadcastType,
@@ -104,8 +105,31 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null }: Radi
             {getBroadcastLabel()}
           </div>
 
-          {/* Signal Meter */}
-          <SignalMeter staticLevel={staticLevel} />
+          {/* Meters Row */}
+          <div className="meters-row">
+            {/* Signal Meter */}
+            <SignalMeter staticLevel={staticLevel} />
+
+            {/* Output VU Meter */}
+            <div className="vu-meter">
+              <div className="vu-meter-label">VU</div>
+              <div className="vu-bars">
+                {[...Array(10)].map((_, i) => {
+                  const threshold = (i + 1) / 10;
+                  const isActive = outputLevel >= threshold;
+                  const isHigh = i >= 7 && i < 9;
+                  const isPeak = i >= 9;
+
+                  return (
+                    <div
+                      key={i}
+                      className={`vu-bar ${isActive ? 'active' : ''} ${isActive && isHigh ? 'high' : ''} ${isActive && isPeak ? 'peak' : ''}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Tuning Section */}

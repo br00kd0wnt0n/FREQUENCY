@@ -58,6 +58,7 @@ interface UsePTTOptions {
 export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
   const [isActive, setIsActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [interimTranscript, setInterimTranscript] = useState('');
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const transcriptRef = useRef('');
 
@@ -73,6 +74,7 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
 
     setIsActive(true);
     transcriptRef.current = '';
+    setInterimTranscript('');
     onStart?.();
 
     // Setup speech recognition
@@ -87,14 +89,24 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let finalTranscript = '';
+      let interim = '';
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+        } else {
+          interim += transcript;
         }
       }
+
       if (finalTranscript) {
         transcriptRef.current += finalTranscript;
+        // Show final transcript in the interim display too
+        setInterimTranscript(transcriptRef.current);
+      } else if (interim) {
+        // Show interim (in-progress) transcript
+        setInterimTranscript(transcriptRef.current + interim);
       }
     };
 
@@ -140,6 +152,7 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
   return {
     isActive,
     isListening,
+    interimTranscript,
     startPTT,
     stopPTT,
   };

@@ -4,6 +4,9 @@ import { useSocket } from '../../hooks/useSocket';
 import { usePTT } from '../../hooks/usePTT';
 import { useAudioEngine } from '../../hooks/useAudioEngine';
 
+// VU meter segment thresholds
+const VU_SEGMENTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+
 interface MobileHandsetProps {
   embedded?: boolean; // Skip link screen when embedded in desktop view
 }
@@ -25,7 +28,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   } = useRadioStore();
 
   const { connect, isConnected, pttStart, pttEnd } = useSocket();
-  const { playSquelch } = useAudioEngine();
+  const { playSquelch, inputLevel, outputLevel, startInputMonitoring, stopInputMonitoring } = useAudioEngine();
 
   useEffect(() => {
     connect();
@@ -58,15 +61,17 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     }, 4000);
   };
 
-  const { isActive, startPTT, stopPTT } = usePTT({
+  const { isActive, interimTranscript, startPTT, stopPTT } = usePTT({
     onStart: () => {
       playSquelch();
       pttStart(currentFrequency);
+      startInputMonitoring(); // Start VU meter for mic input
     },
     onEnd: (transcript) => {
+      stopInputMonitoring(); // Stop VU meter
       playSquelch();
       pttEnd(currentFrequency, transcript);
-      // Show user's transcript in the display
+      // Show user's final transcript in the display (will fade after 4s)
       if (transcript && transcript.trim()) {
         showUserTranscript(transcript);
       }
@@ -167,6 +172,35 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
               <span className={`crt-indicator ${isActive ? 'on tx' : ''}`}>TX</span>
               <span className={`crt-indicator ${isCharacterThinking ? 'on rx' : ''}`}>RX</span>
             </div>
+
+            {/* VU Meters */}
+            <div className="crt-vu-meters">
+              {/* Input VU - shows when transmitting */}
+              <div className={`crt-vu-meter ${isActive ? 'active' : ''}`}>
+                <span className="vu-label">TX</span>
+                <div className="vu-bar">
+                  {VU_SEGMENTS.map((threshold, i) => (
+                    <div
+                      key={i}
+                      className={`vu-segment ${isActive && inputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Output VU - shows audio output level */}
+              <div className={`crt-vu-meter ${isCharacterThinking ? 'active' : ''}`}>
+                <span className="vu-label">RX</span>
+                <div className="vu-bar">
+                  {VU_SEGMENTS.map((threshold, i) => (
+                    <div
+                      key={i}
+                      className={`vu-segment ${outputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -197,10 +231,10 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
           </button>
         </div>
 
-        {/* User transcript LED display */}
-        <div className={`user-transcript-display ${userTranscript ? 'visible' : ''}`}>
+        {/* User transcript LED display - shows live when transmitting, final after release */}
+        <div className={`user-transcript-display ${isActive || userTranscript ? 'visible' : ''} ${isActive ? 'transmitting' : ''}`}>
           <div className="transcript-led-text">
-            {userTranscript || ''}
+            {isActive ? (interimTranscript || '...listening...') : (userTranscript || '')}
           </div>
         </div>
 
