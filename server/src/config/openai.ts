@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 
 dotenv.config();
 
@@ -35,8 +35,8 @@ export class OpenAIClient {
     }
 
     try {
-      // Create a File-like object for the API
-      const file = new File([audioBuffer], filename, { type: 'audio/webm' });
+      // Use OpenAI's toFile helper for Node.js compatibility
+      const file = await toFile(audioBuffer, filename, { type: 'audio/webm' });
 
       const transcription = await this.client.audio.transcriptions.create({
         file,
@@ -44,6 +44,7 @@ export class OpenAIClient {
         language: 'en',
       });
 
+      console.log('Whisper transcription result:', transcription.text);
       return transcription.text || '';
     } catch (error) {
       console.error('Whisper transcription error:', error);

@@ -10,10 +10,11 @@ import { handleNotebookAdd, handleNotebookUpdate, handleNotebookDelete } from '.
 export function setupSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+      origin: true, // Allow all origins (matches express cors config)
       methods: ['GET', 'POST'],
       credentials: true,
     },
+    maxHttpBufferSize: 5e6, // 5MB - needed for audio data
   });
 
   io.on('connection', async (socket: Socket) => {

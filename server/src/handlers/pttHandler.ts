@@ -40,9 +40,11 @@ export async function handlePTTEnd(socket: Socket, payload: PTTEndPayload): Prom
 
   let transcript = providedTranscript || '';
 
+  console.log(`User ${userId} PTT end - transcript: "${transcript.substring(0, 50)}", audioBase64: ${audioBase64 ? `${audioBase64.length} chars` : 'none'}`);
+
   // If no transcript but we have audio, transcribe it server-side with Whisper
   if (!transcript.trim() && audioBase64) {
-    console.log(`User ${userId} PTT end - transcribing audio with Whisper...`);
+    console.log(`User ${userId} PTT end - transcribing ${audioBase64.length} chars of audio with Whisper...`);
     try {
       const audioBuffer = Buffer.from(audioBase64, 'base64');
       transcript = await openaiClient.transcribeAudio(audioBuffer, 'audio.webm');
