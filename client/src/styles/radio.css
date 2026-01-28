@@ -1013,9 +1013,9 @@
 
 .notebook-title {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 1px;
-  color: #333;
+  color: rgba(60, 45, 30, 0.9);
   text-shadow: none;
   font-family: 'Patrick Hand', 'Caveat', cursive;
 }
@@ -1042,7 +1042,7 @@
   grid-template-rows: 1fr 1fr;
   position: relative;
   z-index: 2;
-  overflow: hidden;
+  min-height: 0; /* Critical for grid children to scroll */
 }
 
 /* Pencil divider lines */
@@ -1056,15 +1056,16 @@
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(120, 100, 80, 0.3) 5%,
-    rgba(100, 80, 60, 0.5) 20%,
-    rgba(120, 100, 80, 0.4) 50%,
-    rgba(100, 80, 60, 0.5) 80%,
-    rgba(120, 100, 80, 0.3) 95%,
+    rgba(100, 80, 60, 0.4) 5%,
+    rgba(80, 60, 40, 0.6) 20%,
+    rgba(100, 80, 60, 0.5) 50%,
+    rgba(80, 60, 40, 0.6) 80%,
+    rgba(100, 80, 60, 0.4) 95%,
     transparent 100%
   );
   transform: translateX(-50%);
   z-index: 10;
+  pointer-events: none;
 }
 
 .notebook-quadrants::after {
@@ -1077,21 +1078,22 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(120, 100, 80, 0.3) 5%,
-    rgba(100, 80, 60, 0.5) 20%,
-    rgba(120, 100, 80, 0.4) 50%,
-    rgba(100, 80, 60, 0.5) 80%,
-    rgba(120, 100, 80, 0.3) 95%,
+    rgba(100, 80, 60, 0.4) 5%,
+    rgba(80, 60, 40, 0.6) 20%,
+    rgba(100, 80, 60, 0.5) 50%,
+    rgba(80, 60, 40, 0.6) 80%,
+    rgba(100, 80, 60, 0.4) 95%,
     transparent 100%
   );
   transform: translateY(-50%);
   z-index: 10;
+  pointer-events: none;
 }
 
 .notebook-quadrant {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0; /* Critical for overflow to work in flex/grid */
   padding: 8px;
 }
 
@@ -1100,14 +1102,15 @@
 }
 
 .quadrant-header {
-  font-size: 12px;
-  font-weight: 700;
-  color: #555;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(80, 60, 40, 0.8);
   letter-spacing: 1px;
   padding: 4px 0 8px 0;
   border-bottom: 1px dashed rgba(100, 80, 60, 0.3);
   margin-bottom: 8px;
   font-family: 'Patrick Hand', 'Caveat', cursive;
+  flex-shrink: 0;
 }
 
 .quadrant-content {
@@ -1116,10 +1119,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0; /* Critical for scroll */
 }
 
 .quadrant-empty {
-  color: #999;
+  color: rgba(100, 80, 60, 0.5);
   font-style: italic;
   font-size: 13px;
   padding: 8px 0;
@@ -1153,39 +1157,44 @@
 }
 
 .notebook-entry {
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.3);
+  padding: 8px 0;
+  background: transparent;
   border: none;
-  border-left: 3px solid #1565c0;
-  border-radius: 0 4px 4px 0;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
+}
+
+.notebook-entry.pinned {
+  border-left: 2px solid rgba(100, 80, 60, 0.4);
+  padding-left: 8px;
+  margin-left: -8px;
 }
 
 .notebook-entry-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .notebook-entry-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1565c0;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(60, 45, 30, 0.9);
   font-family: 'Patrick Hand', 'Caveat', cursive;
 }
 
 .notebook-entry-freq {
   font-size: 12px;
-  color: #cc6600;
+  color: rgba(80, 60, 40, 0.7);
   font-variant-numeric: tabular-nums;
-  font-family: 'SF Mono', 'Monaco', monospace;
+  font-family: 'Patrick Hand', 'Caveat', cursive;
 }
 
 .notebook-entry-content {
-  font-size: 14px;
-  color: #444;
-  line-height: 28px;
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(60, 45, 30, 0.85);
+  line-height: 24px;
 }
 
 /* Scratchpad Container */
@@ -1207,13 +1216,11 @@
 }
 
 .scratchpad-notes .notebook-entry {
-  background: rgba(255, 255, 200, 0.3);
-  border-left: 3px solid #e6c84b;
+  background: transparent;
 }
 
 .scratchpad-notes .notebook-entry.pinned {
-  background: rgba(255, 220, 150, 0.4);
-  border-left-color: #d4a500;
+  border-left: 2px solid rgba(100, 80, 60, 0.5);
 }
 
 .scratchpad-textarea {
@@ -1224,10 +1231,11 @@
   border: none;
   border-radius: 0;
   padding: 0;
-  color: #333;
+  color: rgba(60, 45, 30, 0.9);
   font-family: 'Patrick Hand', 'Caveat', cursive;
-  font-size: 16px;
-  line-height: 28px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
   resize: none;
 }
 
@@ -1238,7 +1246,7 @@
 }
 
 .scratchpad-textarea::placeholder {
-  color: #aaa;
+  color: rgba(100, 80, 60, 0.4);
   font-style: italic;
 }
 
