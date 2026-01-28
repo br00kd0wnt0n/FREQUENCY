@@ -31,7 +31,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     addConversationMessage,
   } = useRadioStore();
 
-  const { connect, isConnected, pttStart, pttEnd, lastTranscription, clearTranscription } = useSocket();
+  const { connect, isConnected, pttStart, pttEnd } = useSocket();
   const { playSquelch, inputLevel, outputLevel, startInputMonitoring, stopInputMonitoring } = useAudioEngine();
 
   useEffect(() => {
@@ -90,15 +90,6 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
       window.removeEventListener('ptt-end', handlePTTEnd);
     };
   }, [isActive, startPTT, stopPTT]);
-
-  // Listen for server transcription (from Whisper) - add to chat log
-  useEffect(() => {
-    if (lastTranscription) {
-      console.log('Adding Whisper transcription to chat:', lastTranscription);
-      addConversationMessage('user', 'YOU', lastTranscription);
-      clearTranscription();
-    }
-  }, [lastTranscription, clearTranscription]);
 
   // Listen for character responses - add to chat log
   // Also add user message if we haven't already (fallback for when transcription event is missed)

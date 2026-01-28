@@ -21,7 +21,7 @@ export function useSocket() {
   const [error, setError] = useState<string | null>(null);
   const [lastTranscription, setLastTranscription] = useState<string | null>(null);
 
-  const { setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse } = useRadioStore();
+  const { setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse, addConversationMessage } = useRadioStore();
   const { setEntries } = useNotebookStore();
   const { setFlags, addFlag, addNotification } = useNarrativeStore();
 
@@ -79,16 +79,18 @@ export function useSocket() {
       }
     });
 
-    // Listen for server-side transcription (from Whisper)
+    // Listen for server-side transcription (from Whisper) - add directly to conversation log
     socket.on('transcription', (data: { transcript: string }) => {
       console.log('Received Whisper transcription:', data.transcript);
-      setLastTranscription(data.transcript);
+      if (data.transcript && data.transcript.trim()) {
+        addConversationMessage('user', 'YOU', data.transcript);
+      }
     });
 
     return () => {
       socketService.disconnect();
     };
-  }, [setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse, setEntries, setFlags, addFlag, addNotification]);
+  }, [setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse, setEntries, setFlags, addFlag, addNotification, addConversationMessage]);
 
   const tune = useCallback((frequency: number) => {
     socketService.emit(SocketEvents.TUNE, { frequency });
