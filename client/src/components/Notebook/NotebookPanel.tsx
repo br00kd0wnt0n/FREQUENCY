@@ -10,16 +10,17 @@ export function NotebookPanel({ onClose }: NotebookPanelProps) {
   const { entries, activeTab, setActiveTab, scratchpadContent, setScratchpadContent } = useNotebookStore();
 
   const tabs: { id: TabType; label: string }[] = [
+    { id: 'scratchpad', label: 'NOTES' },
     { id: 'frequencies', label: 'FREQ' },
     { id: 'characters', label: 'CONTACTS' },
     { id: 'signals', label: 'SIGNALS' },
-    { id: 'scratchpad', label: 'NOTES' },
   ];
 
   const filteredEntries = entries.filter((entry) => {
     if (activeTab === 'frequencies') return entry.entry_type === 'frequency';
     if (activeTab === 'characters') return entry.entry_type === 'character';
     if (activeTab === 'signals') return entry.entry_type === 'signal';
+    if (activeTab === 'scratchpad') return entry.entry_type === 'note';
     return false;
   });
 
@@ -48,12 +49,35 @@ export function NotebookPanel({ onClose }: NotebookPanelProps) {
 
       <div className="notebook-content">
         {activeTab === 'scratchpad' ? (
-          <textarea
-            className="scratchpad-textarea"
-            value={scratchpadContent}
-            onChange={(e) => setScratchpadContent(e.target.value)}
-            placeholder="Jot down notes, frequencies, observations..."
-          />
+          <div className="scratchpad-container">
+            {/* Show note entries (starter hints) */}
+            {filteredEntries.length > 0 && (
+              <div className="scratchpad-notes">
+                {filteredEntries.map((entry) => (
+                  <div key={entry.id} className={`notebook-entry ${entry.is_pinned ? 'pinned' : ''}`}>
+                    <div className="notebook-entry-header">
+                      <span className="notebook-entry-title">
+                        {entry.is_pinned && '📌 '}{entry.title}
+                      </span>
+                      {entry.frequency_ref && (
+                        <span className="notebook-entry-freq">{entry.frequency_ref.toFixed(3)} MHz</span>
+                      )}
+                    </div>
+                    {entry.content && (
+                      <div className="notebook-entry-content">{entry.content}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* User's own notes */}
+            <textarea
+              className="scratchpad-textarea"
+              value={scratchpadContent}
+              onChange={(e) => setScratchpadContent(e.target.value)}
+              placeholder="Jot down your own notes here..."
+            />
+          </div>
         ) : filteredEntries.length === 0 ? (
           <div className="notebook-empty">
             {activeTab === 'frequencies' && 'No frequencies logged yet. Scan the dial to find signals.'}

@@ -95,7 +95,7 @@ interface NotebookState {
 
 export const useNotebookStore = create<NotebookState>((set) => ({
   entries: [...starterNotes],
-  activeTab: 'frequencies',
+  activeTab: 'scratchpad',
   scratchpadContent: '',
 
   setEntries: (entries) => set(() => {

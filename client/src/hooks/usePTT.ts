@@ -112,7 +112,19 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
-      if (event.error !== 'aborted') {
+
+      // Handle specific error types
+      if (event.error === 'network') {
+        // Network error - Google's speech servers unreachable
+        setInterimTranscript('(Speech recognition unavailable - network error)');
+        onError?.('Network error - speech recognition unavailable. Try typing instead.');
+      } else if (event.error === 'not-allowed') {
+        setInterimTranscript('(Microphone access denied)');
+        onError?.('Microphone access denied. Please allow microphone access.');
+      } else if (event.error === 'no-speech') {
+        // No speech detected - not really an error, just silence
+        setInterimTranscript('(No speech detected)');
+      } else if (event.error !== 'aborted') {
         onError?.(event.error);
       }
     };
