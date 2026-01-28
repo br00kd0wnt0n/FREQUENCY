@@ -78,6 +78,28 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
     },
   });
 
+  // Listen for spacebar PTT events from App.tsx (desktop keyboard control)
+  useEffect(() => {
+    const handlePTTStart = () => {
+      if (!isActive) {
+        startPTT();
+      }
+    };
+    const handlePTTEnd = () => {
+      if (isActive) {
+        stopPTT();
+      }
+    };
+
+    window.addEventListener('ptt-start', handlePTTStart);
+    window.addEventListener('ptt-end', handlePTTEnd);
+
+    return () => {
+      window.removeEventListener('ptt-start', handlePTTStart);
+      window.removeEventListener('ptt-end', handlePTTEnd);
+    };
+  }, [isActive, startPTT, stopPTT]);
+
   // Character is listening if on voice channel
   const hasCharacter = broadcastType === 'voice' && characterCallsign;
 
