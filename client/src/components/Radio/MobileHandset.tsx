@@ -7,6 +7,14 @@ import { useAudioEngine } from '../../hooks/useAudioEngine';
 // VU meter segment thresholds
 const VU_SEGMENTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'character';
+  callsign: string;
+  text: string;
+  timestamp: number;
+}
+
 interface MobileHandsetProps {
   embedded?: boolean; // Skip link screen when embedded in desktop view
 }
@@ -15,10 +23,11 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
   const [sessionCode, setSessionCode] = useState('');
   const [isLinked, setIsLinked] = useState(embedded); // Auto-link if embedded
   const [inputCode, setInputCode] = useState('');
-  const [userTranscript, setUserTranscript] = useState<string | null>(null);
+  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
   const [showTextInput, setShowTextInput] = useState(false);
   const [textInputValue, setTextInputValue] = useState('');
-  const transcriptTimeoutRef = useRef<number | null>(null);
+  const chatLogRef = useRef<HTMLDivElement>(null);
+  const lastResponseIdRef = useRef<string | null>(null);
 
   const {
     currentFrequency,
@@ -34,7 +43,6 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
   useEffect(() => {
     connect();
-    // Check URL for session code
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('session');
     if (code) {
@@ -44,86 +52,91 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
   const handleLink = () => {
     if (inputCode.length === 4) {
-      // TODO: Implement actual linking via WebSocket
       setSessionCode(inputCode);
       setIsLinked(true);
     }
   };
 
-  // Show user transcript and fade it out
-  const showUserTranscript = (text: string) => {
-    setUserTranscript(text);
-    // Clear any existing timeout
-    if (transcriptTimeoutRef.current) {
-      clearTimeout(transcriptTimeoutRef.current);
-    }
-    // Fade out after 4 seconds
-    transcriptTimeoutRef.current = window.setTimeout(() => {
-      setUserTranscript(null);
-    }, 4000);
+  // Add a message to the chat log
+  const addChatMessage = (role: 'user' | 'character', callsign: string, text: string) => {
+    if (!text || !text.trim()) return;
+    setChatLog(prev => [...prev, {
+      id: `${Date.now()}-${Math.random()}`,
+      role,
+      callsign,
+      text: text.trim(),
+      timestamp: Date.now(),
+    }]);
   };
+
+  // Auto-scroll chat log
+  useEffect(() => {
+    if (chatLogRef.current) {
+      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    }
+  }, [chatLog, isCharacterThinking]);
 
   const { isActive, interimTranscript, startPTT, stopPTT } = usePTT({
     onStart: () => {
       playSquelch();
       pttStart(currentFrequency);
-      startInputMonitoring(); // Start VU meter for mic input
+      startInputMonitoring();
     },
     onEnd: (transcript, audioBase64) => {
-      stopInputMonitoring(); // Stop VU meter
+      stopInputMonitoring();
       playSquelch();
-      // Send both transcript and audio - server will use Whisper if transcript is empty
       pttEnd(currentFrequency, transcript, audioBase64);
-      // Show user's final transcript in the display (will fade after 4s)
+      // If we got a client-side transcript, add it to chat immediately
       if (transcript && transcript.trim()) {
-        showUserTranscript(transcript);
-      } else if (audioBase64) {
-        // Show processing message if we have audio but no transcript
-        showUserTranscript('(Processing voice...)');
+        addChatMessage('user', 'YOU', transcript);
       }
+      // If no transcript but audio was sent, server will transcribe with Whisper
     },
   });
 
   // Listen for spacebar PTT events from App.tsx (desktop keyboard control)
   useEffect(() => {
     const handlePTTStart = () => {
-      if (!isActive) {
-        startPTT();
-      }
+      if (!isActive) startPTT();
     };
     const handlePTTEnd = () => {
-      if (isActive) {
-        stopPTT();
-      }
+      if (isActive) stopPTT();
     };
-
     window.addEventListener('ptt-start', handlePTTStart);
     window.addEventListener('ptt-end', handlePTTEnd);
-
     return () => {
       window.removeEventListener('ptt-start', handlePTTStart);
       window.removeEventListener('ptt-end', handlePTTEnd);
     };
   }, [isActive, startPTT, stopPTT]);
 
-  // Listen for server transcription (from Whisper)
+  // Listen for server transcription (from Whisper) - add to chat log
   useEffect(() => {
     if (lastTranscription) {
-      showUserTranscript(lastTranscription);
+      addChatMessage('user', 'YOU', lastTranscription);
       clearTranscription();
     }
   }, [lastTranscription, clearTranscription]);
+
+  // Listen for character responses - add to chat log
+  useEffect(() => {
+    if (!lastCharacterResponse) return;
+    const responseId = lastCharacterResponse.characterId + lastCharacterResponse.transcript;
+    if (responseId === lastResponseIdRef.current) return;
+    lastResponseIdRef.current = responseId;
+    addChatMessage('character', characterCallsign || 'UNKNOWN', lastCharacterResponse.transcript);
+  }, [lastCharacterResponse, characterCallsign]);
 
   // Handle text input submission
   const handleTextSubmit = () => {
     if (!textInputValue.trim()) return;
     playSquelch();
     pttStart(currentFrequency);
-    // Send text directly (no audio needed)
+    const text = textInputValue.trim();
     setTimeout(() => {
       playSquelch();
-      pttEnd(currentFrequency, textInputValue.trim());
-      showUserTranscript(textInputValue.trim());
+      pttEnd(currentFrequency, text);
+      addChatMessage('user', 'YOU', text);
       setTextInputValue('');
       setShowTextInput(false);
     }, 100);
@@ -142,11 +155,9 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
             <h1>FREQUENCY</h1>
             <p>HANDSET MODE</p>
           </div>
-
           <div className="link-content">
             <div className="link-icon">📡</div>
             <p>Enter the code shown on your desktop</p>
-
             <div className="code-input-group">
               <input
                 type="text"
@@ -160,16 +171,10 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
                 autoFocus
               />
             </div>
-
-            <button
-              className="link-button"
-              onClick={handleLink}
-              disabled={inputCode.length !== 4}
-            >
+            <button className="link-button" onClick={handleLink} disabled={inputCode.length !== 4}>
               LINK TO BASE STATION
             </button>
           </div>
-
           <div className="link-footer">
             <p>Or scan the QR code on your desktop screen</p>
           </div>
@@ -194,60 +199,39 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
           <div className="grille-line" />
         </div>
 
-        {/* CRT-style frequency display (mini version of radio) */}
+        {/* CRT-style frequency display */}
         <div className="handset-crt-display">
           <div className="crt-inner">
-            {/* Signal meter bar */}
             <div className="mini-signal-meter">
-              <div
-                className="signal-fill"
-                style={{ width: `${(1 - staticLevel) * 100}%` }}
-              />
+              <div className="signal-fill" style={{ width: `${(1 - staticLevel) * 100}%` }} />
             </div>
-
-            {/* Frequency readout */}
             <div className="crt-freq-readout">
               <span className="crt-freq-value">{currentFrequency.toFixed(3)}</span>
               <span className="crt-freq-unit">MHz</span>
             </div>
-
-            {/* Channel info */}
             <div className={`crt-channel-info ${!characterCallsign ? 'static' : ''}`}>
               {characterCallsign || '- - - STATIC - - -'}
             </div>
-
-            {/* Status indicators */}
             <div className="crt-status-row">
               <span className={`crt-indicator ${isConnected ? 'on' : ''}`}>LINK</span>
               <span className={`crt-indicator ${hasCharacter ? 'on' : ''}`}>VOICE</span>
               <span className={`crt-indicator ${isActive ? 'on tx' : ''}`}>TX</span>
               <span className={`crt-indicator ${isCharacterThinking ? 'on rx' : ''}`}>RX</span>
             </div>
-
-            {/* VU Meters */}
             <div className="crt-vu-meters">
-              {/* Input VU - shows when transmitting */}
               <div className={`crt-vu-meter ${isActive ? 'active' : ''}`}>
                 <span className="vu-label">TX</span>
                 <div className="vu-bar">
                   {VU_SEGMENTS.map((threshold, i) => (
-                    <div
-                      key={i}
-                      className={`vu-segment ${isActive && inputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`}
-                    />
+                    <div key={i} className={`vu-segment ${isActive && inputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`} />
                   ))}
                 </div>
               </div>
-
-              {/* Output VU - shows audio output level */}
               <div className={`crt-vu-meter ${isCharacterThinking ? 'active' : ''}`}>
                 <span className="vu-label">RX</span>
                 <div className="vu-bar">
                   {VU_SEGMENTS.map((threshold, i) => (
-                    <div
-                      key={i}
-                      className={`vu-segment ${outputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`}
-                    />
+                    <div key={i} className={`vu-segment ${outputLevel >= threshold ? 'active' : ''} ${threshold > 0.7 ? 'hot' : ''}`} />
                   ))}
                 </div>
               </div>
@@ -255,15 +239,36 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
           </div>
         </div>
 
-        {/* Character response area */}
-        {lastCharacterResponse && !isCharacterThinking && (
-          <div className="handset-response">
-            <span className="response-callsign">{characterCallsign}:</span>
-            <span className="response-text">"{lastCharacterResponse.transcript.slice(0, 80)}..."</span>
-          </div>
-        )}
+        {/* Chat log - scrollable conversation history */}
+        <div className="chat-log" ref={chatLogRef}>
+          {chatLog.length === 0 && !isActive && (
+            <div className="chat-empty">
+              {hasCharacter
+                ? `${characterCallsign} is listening. Hold to talk.`
+                : 'Tune to a voice frequency to talk.'}
+            </div>
+          )}
+          {chatLog.map((msg) => (
+            <div key={msg.id} className={`chat-message ${msg.role}`}>
+              <span className="chat-callsign">{msg.callsign}:</span>
+              <span className="chat-text">{msg.text}</span>
+            </div>
+          ))}
+          {isCharacterThinking && (
+            <div className="chat-message character thinking">
+              <span className="chat-callsign">{characterCallsign}:</span>
+              <span className="chat-text thinking-dots">...</span>
+            </div>
+          )}
+          {isActive && (
+            <div className="chat-message user transmitting">
+              <span className="chat-callsign">YOU:</span>
+              <span className="chat-text">{interimTranscript || '● Recording...'}</span>
+            </div>
+          )}
+        </div>
 
-        {/* Giant PTT Button - always enabled */}
+        {/* PTT Button */}
         <div className="ptt-area">
           {showTextInput ? (
             <div className="text-input-area">
@@ -277,17 +282,10 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
                 autoFocus
               />
               <div className="text-input-buttons">
-                <button
-                  className="text-send-btn"
-                  onClick={handleTextSubmit}
-                  disabled={!textInputValue.trim()}
-                >
+                <button className="text-send-btn" onClick={handleTextSubmit} disabled={!textInputValue.trim()}>
                   SEND
                 </button>
-                <button
-                  className="text-cancel-btn"
-                  onClick={() => { setShowTextInput(false); setTextInputValue(''); }}
-                >
+                <button className="text-cancel-btn" onClick={() => { setShowTextInput(false); setTextInputValue(''); }}>
                   CANCEL
                 </button>
               </div>
@@ -309,21 +307,11 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
                   </span>
                 </div>
               </button>
-              <button
-                className="text-fallback-btn"
-                onClick={() => setShowTextInput(true)}
-              >
+              <button className="text-fallback-btn" onClick={() => setShowTextInput(true)}>
                 TYPE INSTEAD
               </button>
             </>
           )}
-        </div>
-
-        {/* User transcript LED display - shows live when transmitting, final after release */}
-        <div className={`user-transcript-display ${isActive || userTranscript ? 'visible' : ''} ${isActive ? 'transmitting' : ''}`}>
-          <div className="transcript-led-text">
-            {isActive ? (interimTranscript || '...listening...') : (userTranscript || '')}
-          </div>
         </div>
 
         {/* Bottom info */}
