@@ -109,6 +109,9 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
       };
 
       mediaRecorder.start(100); // Collect data every 100ms
+
+      // Show recording indicator immediately
+      setInterimTranscript('● Recording...');
     } catch (error) {
       console.error('Failed to start audio recording:', error);
       if (error instanceof DOMException && error.name === 'NotAllowedError') {

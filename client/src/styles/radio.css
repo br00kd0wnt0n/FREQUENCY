@@ -1099,7 +1099,8 @@
   padding: 8px;
 }
 
-.notebook-quadrant.notes {
+.notebook-quadrant.notes,
+.notebook-quadrant.contacts {
   padding-left: 40px; /* Account for red margin line */
 }
 
@@ -1704,6 +1705,7 @@
   background: rgba(0, 0, 0, 0.4);
   border-top: 1px solid var(--border-color);
   text-align: center;
+  flex-shrink: 0;
 }
 
 .handset-footer p {
@@ -1939,7 +1941,7 @@
 
 /* User transcript LED display */
 .user-transcript-display {
-  margin: 0 12px;
+  margin: 8px 12px;
   padding: 8px 12px;
   background: #0a0a0a;
   border: 2px solid #222;
@@ -1948,6 +1950,7 @@
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 0.3s ease, transform 0.3s ease;
+  flex-shrink: 0;
 }
 
 .user-transcript-display.visible {
