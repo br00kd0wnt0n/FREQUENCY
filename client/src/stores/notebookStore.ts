@@ -98,7 +98,7 @@ export const useNotebookStore = create<NotebookState>((set) => ({
   activeTab: 'frequencies',
   scratchpadContent: '',
 
-  setEntries: (entries) => set((state) => {
+  setEntries: (entries) => set(() => {
     // If server sends entries, merge with starter notes (keep starters that aren't duplicates)
     const starterIds = starterNotes.map(n => n.id);
     const serverEntries = entries.filter(e => !starterIds.includes(e.id));
