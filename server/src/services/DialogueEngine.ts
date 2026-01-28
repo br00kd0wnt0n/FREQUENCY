@@ -88,7 +88,9 @@ export class DialogueEngine {
     );
 
     // 9. Generate audio
+    console.log(`Synthesizing audio for ${character.callsign} (voice: ${character.elevenlabs_voice_id}), text length: ${responseText.length}`);
     const audioBuffer = await elevenlabsClient.synthesize(responseText, character.elevenlabs_voice_id);
+    console.log(`Audio synthesis result: ${audioBuffer ? `${audioBuffer.length} bytes` : 'null (no audio)'}`);
 
     // 10. Save character response
     await query(
