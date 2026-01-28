@@ -235,7 +235,7 @@ export interface ErrorEvent {
 
 export const SocketEvents = {
   // Client → Server
-  CONNECT: 'connect',
+  CONNECT: 'client_connect',
   TUNE: 'tune',
   SCAN: 'scan',
   STOP_SCAN: 'stop_scan',
