@@ -954,9 +954,10 @@
 
 /* Notebook Styles - Yellow Legal Pad */
 .notebook-panel {
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Critical for flex children */
   background:
     repeating-linear-gradient(
       transparent,
@@ -1009,6 +1010,7 @@
   background: rgba(255, 245, 157, 0.5);
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .notebook-title {
@@ -1255,8 +1257,8 @@
 .mobile-handset {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  min-height: 480px; /* Ensure PTT button is always visible */
+  flex: 1;
+  min-height: 0; /* Allow flex to work properly */
   background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
   position: relative;
 }
@@ -1357,6 +1359,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  min-height: 0; /* Critical for flex children */
 }
 
 /* Handset Header */
@@ -1452,8 +1455,7 @@
 
 /* PTT Area */
 .ptt-area {
-  flex: 1;
-  min-height: 260px; /* Ensure PTT button always has room */
+  flex: 0 0 auto; /* Don't grow, don't shrink, size to content */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1675,6 +1677,7 @@
   padding: 20px;
   background: rgba(0, 0, 0, 0.4);
   border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 
 .speaker-bars {
@@ -1722,6 +1725,7 @@
     inset 0 0 8px rgba(0, 200, 255, 0.1);
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* CRT Scanlines */

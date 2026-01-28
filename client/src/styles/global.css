@@ -143,58 +143,63 @@ html, body {
   display: flex;
   gap: 24px;
   padding: 24px;
-  overflow: hidden;
+  min-height: 0; /* Critical for flex children */
 }
 
 /* Three column layout for testing */
 .app-main.desktop-layout.three-column {
   display: grid;
   grid-template-columns: minmax(400px, 450px) 1fr minmax(280px, 320px);
+  grid-template-rows: 1fr; /* Single row that fills available height */
   gap: 24px;
 }
 
 .radio-section {
-  flex: 0 0 450px;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .notebook-section {
-  flex: 1;
-  min-width: 300px;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Critical for children to scroll */
 }
 
 .notebook-section .notebook-panel {
-  height: 100%;
+  flex: 1;
   border-radius: 8px;
   border: 1px solid var(--border-color);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0; /* Critical for grid to work */
 }
 
 /* Handset section for desktop testing */
 .handset-section {
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .handset-embed {
-  height: 100%;
+  flex: 1;
   background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
   border-radius: 12px;
   border: 2px solid var(--border-color);
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .handset-embed .mobile-handset {
   flex: 1;
-  min-height: 500px; /* Ensure minimum height for PTT button visibility */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .handset-embed .link-screen {
@@ -202,7 +207,10 @@ html, body {
 }
 
 .handset-embed .handset-body {
+  flex: 1;
   display: flex !important;
+  flex-direction: column !important;
+  min-height: 0;
 }
 
 /* Footer with keyboard hints */
