@@ -12,9 +12,11 @@ interface RadioInterfaceProps {
   showPTT?: boolean;
   activeTuneButton?: 'up' | 'down' | null;
   outputLevel?: number;
+  isPoweredOn?: boolean;
+  onPowerToggle?: () => void;
 }
 
-export function RadioInterface({ showPTT = true, activeTuneButton = null, outputLevel = 0 }: RadioInterfaceProps) {
+export function RadioInterface({ showPTT = true, activeTuneButton = null, outputLevel = 0, isPoweredOn = false, onPowerToggle }: RadioInterfaceProps) {
   const {
     currentFrequency,
     broadcastType,
@@ -58,14 +60,24 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
   return (
     <div className="radio-interface">
       {/* The Radio Unit */}
-      <div className="radio-unit">
+      <div className={`radio-unit ${isPoweredOn ? 'powered-on' : 'powered-off'}`}>
         {/* Top Section with Antenna */}
         <div className="radio-top">
           <div className="antenna" />
+
+          {/* Power Button */}
+          <button
+            className={`power-button ${isPoweredOn ? 'on' : ''}`}
+            onClick={onPowerToggle}
+            title="Power"
+          >
+            <div className="power-led" />
+            <span className="power-label">PWR</span>
+          </button>
         </div>
 
         {/* LED Indicators */}
-        <div className="led-row">
+        <div className={`led-row ${!isPoweredOn ? 'off' : ''}`}>
           <div className={`led ${broadcastType !== 'static' ? 'on' : ''}`} title="Signal" />
           <div className={`led ${isScanning ? 'amber' : ''}`} title="Scanning" />
           <div className={`led ${isCharacterThinking ? 'red' : ''}`} title="RX" />
@@ -74,7 +86,7 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
         </div>
 
         {/* CRT Display */}
-        <div className="crt-display">
+        <div className={`crt-display ${!isPoweredOn ? 'off' : ''}`}>
           {/* Horizontal Frequency Band */}
           <div className="frequency-band">
             <div className="frequency-scale">

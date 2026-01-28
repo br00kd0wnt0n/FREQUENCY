@@ -123,10 +123,88 @@
 /* Top Section - Antenna Mount */
 .radio-top {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 8px 16px;
   background: linear-gradient(180deg, #333 0%, #2a2a2a 100%);
   border-bottom: 1px solid #222;
+}
+
+/* Power Button */
+.power-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border: 2px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.power-button:hover {
+  background: linear-gradient(180deg, #333 0%, #222 100%);
+}
+
+.power-button:active {
+  transform: scale(0.95);
+}
+
+.power-led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+  border: 1px solid #222;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.power-button.on .power-led {
+  background: #ff3333;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.3),
+    0 0 10px rgba(255, 50, 50, 0.8),
+    0 0 20px rgba(255, 50, 50, 0.4);
+}
+
+.power-label {
+  font-size: 8px;
+  color: #666;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.power-button.on .power-label {
+  color: #999;
+}
+
+/* Powered Off State */
+.radio-unit.powered-off .crt-display {
+  background: #0a0a0a;
+}
+
+.radio-unit.powered-off .crt-display * {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.radio-unit.powered-off .led-row .led {
+  background: #1a1a1a;
+  box-shadow: none;
+}
+
+/* Powered On Fade In */
+.radio-unit.powered-on .crt-display * {
+  opacity: 1;
+  transition: opacity 0.5s ease 0.2s;
+}
+
+.led-row.off .led {
+  background: #1a1a1a !important;
+  box-shadow: none !important;
 }
 
 .antenna {

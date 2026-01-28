@@ -38,6 +38,7 @@ function App() {
   const {
     playStaticNoise,
     setStaticLevel,
+    stopStatic,
     playSquelch,
     playAudioBuffer,
     playMorse,
@@ -49,6 +50,7 @@ function App() {
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
   const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
   const [isSpacebarHeld, setIsSpacebarHeld] = useState(false);
+  const [isPoweredOn, setIsPoweredOn] = useState(false);
   const scanIntervalRef = useRef<number | null>(null);
   const scanDirectionRef = useRef<'up' | 'down' | null>(null);
   const lastCharacterResponseRef = useRef<string | null>(null);
@@ -58,42 +60,38 @@ function App() {
     connect();
   }, [connect]);
 
-  // Initialize audio on first user interaction (to satisfy autoplay policy)
+  // Handle power toggle - initializes audio on first power on
+  const handlePowerToggle = useCallback(() => {
+    if (!isPoweredOn) {
+      // Turning ON
+      setIsPoweredOn(true);
+      if (!isAudioInitialized) {
+        startOutputMonitoring();
+        setAudioInitialized(true);
+      }
+      // Fade in static with a slight delay for effect
+      setTimeout(() => {
+        playSquelch();
+        playStaticNoise(staticLevel * volume);
+      }, 200);
+    } else {
+      // Turning OFF
+      setIsPoweredOn(false);
+      stopStatic();
+      stopSignalAudio();
+    }
+  }, [isPoweredOn, isAudioInitialized, startOutputMonitoring, setAudioInitialized, playSquelch, playStaticNoise, staticLevel, volume, stopStatic, stopSignalAudio]);
+
+  // Update static level when it changes (from tuning) - only when powered on
   useEffect(() => {
-    if (isAudioInitialized) return;
-
-    const initAudio = () => {
-      startOutputMonitoring(); // Start VU meter monitoring first (creates master gain node)
-      playStaticNoise(staticLevel * volume);
-      setAudioInitialized(true);
-      playSquelch(); // Initial squelch sound
-      // Remove listeners after first interaction
-      window.removeEventListener('click', initAudio);
-      window.removeEventListener('keydown', initAudio);
-      window.removeEventListener('touchstart', initAudio);
-    };
-
-    window.addEventListener('click', initAudio);
-    window.addEventListener('keydown', initAudio);
-    window.addEventListener('touchstart', initAudio);
-
-    return () => {
-      window.removeEventListener('click', initAudio);
-      window.removeEventListener('keydown', initAudio);
-      window.removeEventListener('touchstart', initAudio);
-    };
-  }, [isAudioInitialized, playStaticNoise, playSquelch, setAudioInitialized, staticLevel, volume, startOutputMonitoring]);
-
-  // Update static level when it changes (from tuning)
-  useEffect(() => {
-    if (isAudioInitialized) {
+    if (isAudioInitialized && isPoweredOn) {
       setStaticLevel(staticLevel * volume);
     }
-  }, [staticLevel, volume, isAudioInitialized, setStaticLevel]);
+  }, [staticLevel, volume, isAudioInitialized, isPoweredOn, setStaticLevel]);
 
-  // Play morse/numbers when tuned to signal frequencies
+  // Play morse/numbers when tuned to signal frequencies - only when powered on
   useEffect(() => {
-    if (!isAudioInitialized) return;
+    if (!isAudioInitialized || !isPoweredOn) return;
 
     // Stop any existing signal audio first
     stopSignalAudio();
@@ -109,7 +107,7 @@ function App() {
     return () => {
       stopSignalAudio();
     };
-  }, [broadcastType, isAudioInitialized, playMorse, playNumbers, stopSignalAudio, volume]);
+  }, [broadcastType, isAudioInitialized, isPoweredOn, playMorse, playNumbers, stopSignalAudio, volume]);
 
   // Auto-log discoveries to notebook
   useEffect(() => {
@@ -321,7 +319,13 @@ function App() {
 
       <main className="app-main desktop-layout three-column">
         <div className="radio-section">
-          <RadioInterface showPTT={false} activeTuneButton={activeTuneButton} outputLevel={outputLevel} />
+          <RadioInterface
+            showPTT={false}
+            activeTuneButton={activeTuneButton}
+            outputLevel={outputLevel}
+            isPoweredOn={isPoweredOn}
+            onPowerToggle={handlePowerToggle}
+          />
         </div>
         <div className="notebook-section">
           <NotebookPanel />
