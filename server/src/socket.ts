@@ -6,6 +6,7 @@ import { handleTune } from './handlers/tuneHandler';
 import { handleScan, handleStopScan, cleanupScan } from './handlers/scanHandler';
 import { handlePTTStart, handlePTTEnd } from './handlers/pttHandler';
 import { handleNotebookAdd, handleNotebookUpdate, handleNotebookDelete } from './handlers/notebookHandler';
+import { query } from './config/database';
 
 export function setupSocket(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -67,6 +68,28 @@ export function setupSocket(httpServer: HttpServer): Server {
 
     socket.on(SocketEvents.NOTEBOOK_DELETE, async (payload) => {
       await handleNotebookDelete(socket, payload);
+    });
+
+    // Reset conversation history
+    socket.on('reset_conversations', async () => {
+      const userId = socket.data.userId;
+      if (!userId) return;
+      try {
+        // Delete messages for all of this user's conversations
+        await query(
+          `DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE user_id = $1)`,
+          [userId]
+        );
+        // Delete the conversations themselves
+        await query(`DELETE FROM conversations WHERE user_id = $1`, [userId]);
+        // Reset trust levels
+        await query(`DELETE FROM character_trust WHERE user_id = $1`, [userId]);
+        console.log(`Reset all conversations for user ${userId}`);
+        socket.emit('conversations_reset', { success: true });
+      } catch (error) {
+        console.error('Failed to reset conversations:', error);
+        socket.emit(SocketEvents.ERROR, { code: 'RESET_ERROR', message: 'Failed to reset conversations' });
+      }
     });
 
     // Disconnect

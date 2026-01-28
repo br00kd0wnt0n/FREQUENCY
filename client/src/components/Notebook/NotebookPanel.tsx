@@ -48,7 +48,7 @@ export function NotebookPanel({ onClose }: NotebookPanelProps) {
       <div className="notebook-quadrants">
         {/* Top Left - Notes/Leads */}
         <div className="notebook-quadrant notes">
-          <div className="quadrant-header">NOTES & LEADS</div>
+          <div className="quadrant-header">OBSERVATIONS</div>
           <div className="quadrant-content">
             {renderEntries(noteEntries, 'No notes yet...')}
             <textarea

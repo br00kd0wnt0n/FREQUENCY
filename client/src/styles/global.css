@@ -215,6 +215,7 @@ html, body {
 
 /* Footer with keyboard hints */
 .app-footer {
+  position: relative;
   padding: 12px 24px;
   border-top: 1px solid rgba(0, 200, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
@@ -242,6 +243,27 @@ html, body {
 
 .keyboard-hints span.disabled {
   opacity: 0.3;
+}
+
+.reset-btn {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: rgba(255, 80, 80, 0.6);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  border-color: rgba(255, 80, 80, 0.6);
+  color: rgba(255, 80, 80, 0.9);
 }
 
 .ptt-active-indicator {

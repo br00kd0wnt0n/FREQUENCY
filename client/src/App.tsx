@@ -18,7 +18,7 @@ const MAX_FREQUENCY = 32.000;
 const SCAN_INTERVAL = 100; // ms between scan steps
 
 function App() {
-  const { connect, isConnected, tune, startScan, stopScan } = useSocket();
+  const { connect, isConnected, tune, startScan, stopScan, resetConversations } = useSocket();
   const {
     setFrequency,
     setFrequencyWithReset,
@@ -349,6 +349,16 @@ function App() {
           <span><kbd>↑</kbd> <kbd>↓</kbd> Fine tune</span>
           <span><kbd>Space</kbd> Push to talk</span>
         </div>
+        <button
+          className="reset-btn"
+          onClick={() => {
+            if (window.confirm('Reset all conversation history? Characters will forget previous interactions.')) {
+              resetConversations();
+            }
+          }}
+        >
+          RESET CONVERSATIONS
+        </button>
       </footer>
 
       {showConnectPrompt && (

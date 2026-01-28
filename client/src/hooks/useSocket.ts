@@ -112,6 +112,12 @@ export function useSocket() {
     socketService.emit(SocketEvents.PTT_END, { frequency, transcript, audioBase64 });
   }, []);
 
+  const resetConversations = useCallback(() => {
+    socketService.emit('reset_conversations', {});
+    // Clear local conversation log
+    useRadioStore.getState().clearConversationLog();
+  }, []);
+
   const clearTranscription = useCallback(() => {
     setLastTranscription(null);
   }, []);
@@ -128,5 +134,6 @@ export function useSocket() {
     pttStart,
     pttEnd,
     clearTranscription,
+    resetConversations,
   };
 }
