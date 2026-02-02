@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { FrequencyDial } from './FrequencyDial';
 import { PTTButton } from './PTTButton';
 import { SignalMeter } from './SignalMeter';
@@ -26,16 +25,7 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
     staticLevel,
     isScanning,
     isCharacterThinking,
-    conversationLog,
   } = useRadioStore();
-
-  const chatLogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (chatLogRef.current) {
-      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
-    }
-  }, [conversationLog, isCharacterThinking]);
 
   const { tune, pttStart, pttEnd } = useSocket();
   const { isHandsetConnected } = useDeviceStore();
@@ -160,27 +150,6 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
           />
         </div>
 
-      </div>
-
-      {/* Conversation Log - outside radio-unit so it can flex-grow */}
-      <div className="radio-chat-log" ref={chatLogRef}>
-        {conversationLog.length === 0 && !isCharacterThinking && (
-          <div className="radio-chat-empty">
-            {canTalk ? 'Press Space to talk...' : 'Tune to a voice frequency...'}
-          </div>
-        )}
-        {conversationLog.map((msg) => (
-          <div key={msg.id} className={`radio-chat-message ${msg.role}`}>
-            <span className="radio-chat-callsign">{msg.callsign}:</span>
-            <span className="radio-chat-text">{msg.text}</span>
-          </div>
-        ))}
-        {isCharacterThinking && (
-          <div className="radio-chat-message character thinking">
-            <span className="radio-chat-callsign">{characterCallsign}:</span>
-            <span className="radio-chat-text thinking-dots">...</span>
-          </div>
-        )}
       </div>
 
       {/* PTT Button - only shown if showPTT is true */}

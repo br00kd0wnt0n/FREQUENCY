@@ -73,8 +73,7 @@
 .radio-unit {
   position: relative;
   z-index: 2;
-  margin: 0 auto;
-  flex-shrink: 0;
+  margin: 12px auto;
   width: 95%;
   max-width: 420px;
   background:
