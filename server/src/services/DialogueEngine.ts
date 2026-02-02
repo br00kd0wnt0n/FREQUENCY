@@ -76,10 +76,15 @@ export class DialogueEngine {
     );
 
     // 7. Get AI response
-    const responseText = await openaiClient.generateResponse(
-      prompt,
-      history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
-    );
+    // Pass history as chat messages with the new user message appended
+    // so the model sees the current input as a proper user turn
+    const chatHistory = history.map(m => ({
+      role: m.role === 'user' ? 'user' : 'assistant',
+      content: m.content,
+    }));
+    chatHistory.push({ role: 'user', content: userMessage });
+
+    const responseText = await openaiClient.generateResponse(prompt, chatHistory);
 
     // 8. Save user message
     await query(

@@ -29,11 +29,7 @@ ${this.formatHistory(conversationHistory)}
 ${character.speaking_style || 'Natural radio operator style.'}
 Remember: You're on a radio. Keep responses relatively brief (1-3 sentences typically).
 Use radio language naturally ("copy that", "over", "10-4").
-Stay in character at all times.
-
-Operator says: "${userMessage}"
-
-Respond in character:`;
+Stay in character at all times. Respond directly to what the operator says.`;
   }
 
   private filterKnowledgeByTrust(knowledge: Record<string, string>, trustLevel: number): string {
