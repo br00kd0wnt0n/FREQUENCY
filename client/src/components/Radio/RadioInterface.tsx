@@ -70,11 +70,8 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
     <div className="radio-interface">
       {/* The Radio Unit */}
       <div className={`radio-unit ${isPoweredOn ? 'powered-on' : 'powered-off'}`}>
-        {/* Top Section with Antenna */}
-        <div className="radio-top">
-          <div className="antenna" />
-
-          {/* Power Button */}
+        {/* Top Bar: Power + Antenna + LEDs */}
+        <div className="radio-top-bar">
           <button
             className={`power-button ${isPoweredOn ? 'on' : ''}`}
             onClick={onPowerToggle}
@@ -83,15 +80,16 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
             <div className="power-led" />
             <span className="power-label">PWR</span>
           </button>
-        </div>
 
-        {/* LED Indicators */}
-        <div className={`led-row ${!isPoweredOn ? 'off' : ''}`}>
-          <div className={`led ${broadcastType !== 'static' ? 'on' : ''}`} title="Signal" />
-          <div className={`led ${isScanning ? 'amber' : ''}`} title="Scanning" />
-          <div className={`led ${isCharacterThinking ? 'red' : ''}`} title="RX" />
-          <div className={`led ${isHandsetConnected ? 'on' : ''}`} title="Handset" />
-          <div className={`led ${canTalk ? 'on' : ''}`} title="Voice" />
+          <div className="antenna" />
+
+          <div className={`led-row ${!isPoweredOn ? 'off' : ''}`}>
+            <div className={`led ${broadcastType !== 'static' ? 'on' : ''}`} title="Signal" />
+            <div className={`led ${isScanning ? 'amber' : ''}`} title="Scanning" />
+            <div className={`led ${isCharacterThinking ? 'red' : ''}`} title="RX" />
+            <div className={`led ${isHandsetConnected ? 'on' : ''}`} title="Handset" />
+            <div className={`led ${canTalk ? 'on' : ''}`} title="Voice" />
+          </div>
         </div>
 
         {/* CRT Display */}
@@ -162,21 +160,25 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
           />
         </div>
 
-        {/* Conversation Log */}
-        {(conversationLog.length > 0 || isCharacterThinking) && (
-          <div className="radio-chat-log" ref={chatLogRef}>
-            {conversationLog.map((msg) => (
-              <div key={msg.id} className={`radio-chat-message ${msg.role}`}>
-                <span className="radio-chat-callsign">{msg.callsign}:</span>
-                <span className="radio-chat-text">{msg.text}</span>
-              </div>
-            ))}
-            {isCharacterThinking && (
-              <div className="radio-chat-message character thinking">
-                <span className="radio-chat-callsign">{characterCallsign}:</span>
-                <span className="radio-chat-text thinking-dots">...</span>
-              </div>
-            )}
+      </div>
+
+      {/* Conversation Log - outside radio-unit so it can flex-grow */}
+      <div className="radio-chat-log" ref={chatLogRef}>
+        {conversationLog.length === 0 && !isCharacterThinking && (
+          <div className="radio-chat-empty">
+            {canTalk ? 'Press Space to talk...' : 'Tune to a voice frequency...'}
+          </div>
+        )}
+        {conversationLog.map((msg) => (
+          <div key={msg.id} className={`radio-chat-message ${msg.role}`}>
+            <span className="radio-chat-callsign">{msg.callsign}:</span>
+            <span className="radio-chat-text">{msg.text}</span>
+          </div>
+        ))}
+        {isCharacterThinking && (
+          <div className="radio-chat-message character thinking">
+            <span className="radio-chat-callsign">{characterCallsign}:</span>
+            <span className="radio-chat-text thinking-dots">...</span>
           </div>
         )}
       </div>
