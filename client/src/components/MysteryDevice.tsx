@@ -41,8 +41,8 @@ export function MysteryDevice() {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    canvas.width = 280;
-    canvas.height = 180;
+    canvas.width = 350;
+    canvas.height = 100;
 
     let lastTime = 0;
     const fps = 14;

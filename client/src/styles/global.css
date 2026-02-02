@@ -699,12 +699,11 @@ button:disabled {
 /* ==================== MYSTERY DEVICE ==================== */
 
 .mystery-device {
-  flex: 1;
-  min-height: 120px;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 20px;
+  padding: 8px 20px;
 }
 
 .mystery-device-housing {
@@ -796,7 +795,7 @@ button:disabled {
 .mystery-crt {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: 7 / 2;
   background: #010a04;
   border-radius: 3px;
   overflow: hidden;
