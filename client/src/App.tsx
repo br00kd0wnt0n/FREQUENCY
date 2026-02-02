@@ -3,6 +3,8 @@ import { RadioInterface } from './components/Radio/RadioInterface';
 import { NotebookPanel } from './components/Notebook/NotebookPanel';
 import { MobileHandset } from './components/Radio/MobileHandset';
 import { ConnectPhone } from './components/shared/ConnectPhone';
+import { WelcomeOverlay } from './components/WelcomeOverlay';
+import { MysteryDevice } from './components/MysteryDevice';
 import { useSocket } from './hooks/useSocket';
 import { useRadioStore } from './stores/radioStore';
 import { useDeviceStore } from './stores/deviceStore';
@@ -50,6 +52,9 @@ function App() {
     startOutputMonitoring,
   } = useAudioEngine();
   const [showConnectPrompt, setShowConnectPrompt] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !sessionStorage.getItem('frequency_welcomed');
+  });
   const [activeTuneButton, setActiveTuneButton] = useState<'up' | 'down' | null>(null);
   const [isSpacebarHeld, setIsSpacebarHeld] = useState(false);
   const [isPoweredOn, setIsPoweredOn] = useState(false);
@@ -332,6 +337,7 @@ function App() {
             isPoweredOn={isPoweredOn}
             onPowerToggle={handlePowerToggle}
           />
+          <MysteryDevice />
         </div>
         <div className="notebook-section">
           <NotebookPanel />
@@ -360,6 +366,13 @@ function App() {
           RESET CONVERSATIONS
         </button>
       </footer>
+
+      {showWelcome && (
+        <WelcomeOverlay onDismiss={() => {
+          setShowWelcome(false);
+          sessionStorage.setItem('frequency_welcomed', '1');
+        }} />
+      )}
 
       {showConnectPrompt && (
         <ConnectPhone
