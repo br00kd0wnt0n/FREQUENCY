@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { socketService } from '../services/socket';
 import { useRadioStore } from '../stores/radioStore';
 import { useNotebookStore } from '../stores/notebookStore';
@@ -20,6 +20,7 @@ export function useSocket() {
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lastTranscription, setLastTranscription] = useState<string | null>(null);
+  const listenersRegistered = useRef(false);
 
   const { setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse, addConversationMessage } = useRadioStore();
   const { setEntries } = useNotebookStore();
@@ -29,6 +30,10 @@ export function useSocket() {
     const storedUserId = localStorage.getItem('frequency_user_id');
     const socket = socketService.connect();
 
+    // Only register listeners once per socket instance
+    if (listenersRegistered.current) return;
+    listenersRegistered.current = true;
+
     socket.on('connect', () => {
       setIsConnected(true);
       // Send connect event with user ID
@@ -37,6 +42,7 @@ export function useSocket() {
 
     socket.on('disconnect', () => {
       setIsConnected(false);
+      listenersRegistered.current = false;
     });
 
     socket.on(SocketEvents.CONNECTED, (data: ConnectedEvent) => {
@@ -80,14 +86,24 @@ export function useSocket() {
     });
 
     // Listen for server-side transcription (from Whisper) - add directly to conversation log
+    // Only used when client-side STT didn't produce a transcript
     socket.on('transcription', (data: { transcript: string }) => {
       console.log('Received Whisper transcription:', data.transcript);
       if (data.transcript && data.transcript.trim()) {
-        addConversationMessage('user', 'YOU', data.transcript);
+        setLastTranscription(data.transcript);
+        // Only add to chat if there's no recent user message (avoids duplicates with client STT)
+        const log = useRadioStore.getState().conversationLog;
+        const hasRecentUserMessage = log.some(
+          m => m.role === 'user' && Date.now() - m.timestamp < 5000
+        );
+        if (!hasRecentUserMessage) {
+          addConversationMessage('user', 'YOU', data.transcript);
+        }
       }
     });
 
     return () => {
+      listenersRegistered.current = false;
       socketService.disconnect();
     };
   }, [setTuned, setScanUpdate, setCharacterThinking, setCharacterResponse, setEntries, setFlags, addFlag, addNotification, addConversationMessage]);

@@ -99,6 +99,7 @@ export async function handlePTTEnd(socket: Socket, payload: PTTEndPayload): Prom
     // Send character audio response
     const audioEvent: CharacterAudioEvent = {
       characterId,
+      characterCallsign: info.character.callsign,
       audioBase64: response.audioBuffer?.toString('base64'),
       transcript: response.text,
       duration: 3000, // TODO: Calculate actual duration

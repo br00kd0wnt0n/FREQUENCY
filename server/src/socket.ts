@@ -21,27 +21,55 @@ export function setupSocket(httpServer: HttpServer): Server {
   io.on('connection', async (socket: Socket) => {
     console.log('Socket connected:', socket.id);
 
+    // Track auto-connect timer so we can cancel it
+    let autoConnectTimer: ReturnType<typeof setTimeout> | null = null;
+
     // Handle initial connection with optional user ID
     socket.on(SocketEvents.CONNECT, async (payload: ConnectPayload) => {
-      await handleConnection(socket, payload.userId);
+      // Cancel auto-connect if explicit connect arrives first
+      if (autoConnectTimer) {
+        clearTimeout(autoConnectTimer);
+        autoConnectTimer = null;
+      }
+      // Only connect once per socket
+      if (socket.data.userId) return;
+      try {
+        await handleConnection(socket, payload.userId);
+      } catch (error) {
+        console.error('Connection handler error:', error);
+        socket.emit(SocketEvents.ERROR, { code: 'CONNECTION_ERROR', message: 'Failed to establish connection' });
+      }
     });
 
     // Auto-connect if no explicit connect event (for simplicity)
-    // Wait a moment for client to send connect event, otherwise auto-connect
-    setTimeout(async () => {
+    autoConnectTimer = setTimeout(async () => {
+      autoConnectTimer = null;
       if (!socket.data.userId) {
-        await handleConnection(socket);
+        try {
+          await handleConnection(socket);
+        } catch (error) {
+          console.error('Auto-connect error:', error);
+          socket.emit(SocketEvents.ERROR, { code: 'CONNECTION_ERROR', message: 'Failed to establish connection' });
+        }
       }
     }, 1000);
 
     // Tuning
     socket.on(SocketEvents.TUNE, async (payload) => {
-      await handleTune(socket, payload);
+      try {
+        await handleTune(socket, payload);
+      } catch (error) {
+        console.error('Tune handler error:', error);
+      }
     });
 
     // Scanning
     socket.on(SocketEvents.SCAN, async (payload) => {
-      await handleScan(socket, payload);
+      try {
+        await handleScan(socket, payload);
+      } catch (error) {
+        console.error('Scan handler error:', error);
+      }
     });
 
     socket.on(SocketEvents.STOP_SCAN, () => {
@@ -50,24 +78,45 @@ export function setupSocket(httpServer: HttpServer): Server {
 
     // Push-to-talk
     socket.on(SocketEvents.PTT_START, async (payload) => {
-      await handlePTTStart(socket, payload);
+      try {
+        await handlePTTStart(socket, payload);
+      } catch (error) {
+        console.error('PTT start handler error:', error);
+      }
     });
 
     socket.on(SocketEvents.PTT_END, async (payload) => {
-      await handlePTTEnd(socket, payload);
+      try {
+        await handlePTTEnd(socket, payload);
+      } catch (error) {
+        console.error('PTT end handler error:', error);
+        socket.emit(SocketEvents.ERROR, { code: 'DIALOGUE_ERROR', message: 'Failed to process voice message' });
+      }
     });
 
     // Notebook
     socket.on(SocketEvents.NOTEBOOK_ADD, async (payload) => {
-      await handleNotebookAdd(socket, payload);
+      try {
+        await handleNotebookAdd(socket, payload);
+      } catch (error) {
+        console.error('Notebook add handler error:', error);
+      }
     });
 
     socket.on(SocketEvents.NOTEBOOK_UPDATE, async (payload) => {
-      await handleNotebookUpdate(socket, payload);
+      try {
+        await handleNotebookUpdate(socket, payload);
+      } catch (error) {
+        console.error('Notebook update handler error:', error);
+      }
     });
 
     socket.on(SocketEvents.NOTEBOOK_DELETE, async (payload) => {
-      await handleNotebookDelete(socket, payload);
+      try {
+        await handleNotebookDelete(socket, payload);
+      } catch (error) {
+        console.error('Notebook delete handler error:', error);
+      }
     });
 
     // Reset conversation history
@@ -94,8 +143,19 @@ export function setupSocket(httpServer: HttpServer): Server {
 
     // Disconnect
     socket.on('disconnect', async () => {
+      // Cancel auto-connect timer if socket disconnects before it fires
+      if (autoConnectTimer) {
+        clearTimeout(autoConnectTimer);
+        autoConnectTimer = null;
+      }
       cleanupScan(socket.id);
-      await handleDisconnect(socket);
+      // Clear active PTT on disconnect
+      socket.data.activePTT = null;
+      try {
+        await handleDisconnect(socket);
+      } catch (error) {
+        console.error('Disconnect handler error:', error);
+      }
       console.log('Socket disconnected:', socket.id);
     });
   });

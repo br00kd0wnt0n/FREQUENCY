@@ -197,6 +197,7 @@ export interface ScanUpdateEvent {
 
 export interface CharacterAudioEvent {
   characterId: string;
+  characterCallsign: string;
   audioUrl?: string;
   audioBase64?: string;
   transcript: string;

@@ -110,8 +110,10 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
       addConversationMessage('user', 'YOU', lastUserMessageRef.current);
     }
 
-    addConversationMessage('character', characterCallsign || 'UNKNOWN', lastCharacterResponse.transcript);
-  }, [lastCharacterResponse, characterCallsign]);
+    // Use callsign from response (not store state which may have changed if user tuned away)
+    const responseCallsign = lastCharacterResponse.characterCallsign || characterCallsign || 'UNKNOWN';
+    addConversationMessage('character', responseCallsign, lastCharacterResponse.transcript);
+  }, [lastCharacterResponse, characterCallsign, addConversationMessage]);
 
   // Handle text input submission
   const handleTextSubmit = () => {

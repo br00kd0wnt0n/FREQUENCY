@@ -76,6 +76,10 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Callback refs to avoid stale closures in onstop handler
+  const onEndRef = useRef(onEnd);
+  onEndRef.current = onEnd;
+
   const startPTT = useCallback(async () => {
     if (isActive) return;
 
@@ -106,6 +110,31 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
+      };
+
+      // Set onstop handler once here (not in stopPTT) to avoid overwriting
+      mediaRecorder.onstop = async () => {
+        // Stop media stream
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+
+        // Convert audio chunks to base64
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.split(',')[1]; // Remove data URL prefix
+
+          // Get transcript (might be empty if speech recognition failed)
+          const transcript = transcriptRef.current.trim();
+
+          // Call onEnd with transcript and audio
+          // If transcript is empty, server will use Whisper to transcribe
+          onEndRef.current?.(transcript, base64Data);
+        };
+        reader.readAsDataURL(audioBlob);
       };
 
       mediaRecorder.start(100); // Collect data every 100ms
@@ -199,39 +228,17 @@ export function usePTT({ onStart, onEnd, onError }: UsePTTOptions = {}) {
 
     // Stop speech recognition
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Already stopped
+      }
       recognitionRef.current = null;
     }
     setIsListening(false);
 
-    // Stop audio recording and get the data
+    // Stop audio recording — onstop handler (set in startPTT) will fire and deliver the audio
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.onstop = async () => {
-        // Convert audio chunks to base64
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-
-        // Stop media stream
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-          streamRef.current = null;
-        }
-
-        // Convert to base64
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64 = reader.result as string;
-          const base64Data = base64.split(',')[1]; // Remove data URL prefix
-
-          // Get transcript (might be empty if speech recognition failed)
-          const transcript = transcriptRef.current.trim();
-
-          // Call onEnd with transcript and audio
-          // If transcript is empty, server will use Whisper to transcribe
-          onEnd?.(transcript, base64Data);
-        };
-        reader.readAsDataURL(audioBlob);
-      };
-
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current = null;
     } else {

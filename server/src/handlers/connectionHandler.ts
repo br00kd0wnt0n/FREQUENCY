@@ -28,6 +28,9 @@ export async function handleConnection(socket: Socket, userId?: string): Promise
           `INSERT INTO users (id) VALUES ($1) RETURNING *`,
           [userId]
         );
+        if (!result[0]) {
+          throw new Error('Failed to create user');
+        }
         user = result[0];
       }
     } else {
@@ -35,6 +38,9 @@ export async function handleConnection(socket: Socket, userId?: string): Promise
       const result = await query<User>(
         `INSERT INTO users DEFAULT VALUES RETURNING *`
       );
+      if (!result[0]) {
+        throw new Error('Failed to create user');
+      }
       user = result[0];
     }
 
