@@ -321,6 +321,20 @@ function App() {
       <header className="app-header">
         <h1 className="app-title">FREQUENCY</h1>
         <div className="header-right">
+          <button
+            className="back-to-landing"
+            onClick={() => {
+              sessionStorage.removeItem('frequency_welcomed');
+              setShowWelcome(true);
+              if (isPoweredOn) {
+                setIsPoweredOn(false);
+                stopStatic();
+                stopSignalAudio();
+              }
+            }}
+          >
+            BRIEFING
+          </button>
           <div className="connection-status">
             <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
             {isConnected ? 'CONNECTED' : 'OFFLINE MODE'}
