@@ -1002,6 +1002,111 @@
   100% { opacity: 0.1; }
 }
 
+/* ==================== EMF / Paranormal Interference ==================== */
+
+/* Power fluctuation on the whole radio unit */
+.radio-unit.emf-glitch {
+  animation: emfPowerDip 0.15s steps(2) infinite;
+}
+
+.radio-unit.emf-glitch.emf-light {
+  animation: emfPowerDip 0.12s steps(2) 1;
+}
+
+.radio-unit.emf-glitch.emf-medium {
+  animation: emfPowerDip 0.1s steps(3) infinite;
+}
+
+.radio-unit.emf-glitch.emf-heavy {
+  animation: emfPowerDipHeavy 0.08s steps(4) infinite;
+}
+
+@keyframes emfPowerDip {
+  0% { filter: brightness(1); }
+  25% { filter: brightness(0.7); }
+  50% { filter: brightness(0.92); }
+  75% { filter: brightness(0.78); }
+  100% { filter: brightness(1); }
+}
+
+@keyframes emfPowerDipHeavy {
+  0% { filter: brightness(1); }
+  20% { filter: brightness(0.5); }
+  40% { filter: brightness(0.85); }
+  60% { filter: brightness(0.4); }
+  80% { filter: brightness(0.9); }
+  100% { filter: brightness(1); }
+}
+
+/* LED flicker during interference */
+.radio-unit.emf-glitch .led.on,
+.radio-unit.emf-glitch .led.amber,
+.radio-unit.emf-glitch .led.red {
+  animation: emfLedFlicker 0.08s steps(2) infinite;
+}
+
+@keyframes emfLedFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Frequency display corruption */
+.emf-freq-glitch {
+  animation: emfFreqGlitch 0.1s steps(2) infinite;
+}
+
+@keyframes emfFreqGlitch {
+  0% {
+    transform: translate(0, 0);
+    filter: none;
+  }
+  25% {
+    transform: translate(-1px, 0);
+    filter: hue-rotate(20deg);
+  }
+  50% {
+    transform: translate(1px, 0.5px);
+    filter: hue-rotate(-15deg);
+  }
+  75% {
+    transform: translate(-0.5px, -0.5px);
+    filter: hue-rotate(10deg);
+  }
+  100% {
+    transform: translate(0, 0);
+    filter: none;
+  }
+}
+
+/* CRT display distortion during interference */
+.radio-unit.emf-glitch .crt-display::after {
+  background: radial-gradient(ellipse at center,
+    rgba(255, 100, 50, 0.06) 0%,
+    transparent 70%);
+}
+
+/* Signal bars flutter */
+.radio-unit.emf-glitch .signal-bar.active,
+.radio-unit.emf-glitch .vu-bar.active {
+  animation: emfBarFlutter 0.06s steps(2) infinite;
+}
+
+@keyframes emfBarFlutter {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Power LED flicker */
+.radio-unit.emf-glitch .power-led {
+  animation: emfPowerLed 0.1s steps(3) infinite;
+}
+
+@keyframes emfPowerLed {
+  0%, 100% { opacity: 1; }
+  33% { opacity: 0.4; }
+  66% { opacity: 0.8; }
+}
+
 /* Scan Speed Toggle */
 .scan-speed-toggle {
   display: flex;

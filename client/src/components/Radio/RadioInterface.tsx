@@ -1,3 +1,4 @@
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { FrequencyDial } from './FrequencyDial';
 import { PTTButton } from './PTTButton';
 import { SignalMeter } from './SignalMeter';
@@ -7,6 +8,49 @@ import { useDeviceStore } from '../../stores/deviceStore';
 
 const MIN_FREQ = 26.000;
 const MAX_FREQ = 32.000;
+
+// Paranormal EMF interference effect
+function useEMFInterference(isPoweredOn: boolean) {
+  const [isGlitching, setIsGlitching] = useState(false);
+  const [glitchIntensity, setGlitchIntensity] = useState<'light' | 'medium' | 'heavy'>('light');
+  const timeoutRef = useRef<number | null>(null);
+
+  const scheduleNext = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    // Random interval: 15-60 seconds between events
+    const delay = 15000 + Math.random() * 45000;
+    timeoutRef.current = window.setTimeout(() => {
+      if (!isPoweredOn) {
+        scheduleNext();
+        return;
+      }
+      // Pick intensity: 60% light, 30% medium, 10% heavy
+      const roll = Math.random();
+      const intensity = roll < 0.6 ? 'light' : roll < 0.9 ? 'medium' : 'heavy';
+      setGlitchIntensity(intensity);
+      setIsGlitching(true);
+
+      // Duration varies by intensity: 150-800ms
+      const duration = intensity === 'light' ? 150 + Math.random() * 200
+        : intensity === 'medium' ? 300 + Math.random() * 300
+        : 500 + Math.random() * 300;
+
+      setTimeout(() => {
+        setIsGlitching(false);
+        scheduleNext();
+      }, duration);
+    }, delay);
+  }, [isPoweredOn]);
+
+  useEffect(() => {
+    scheduleNext();
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [scheduleNext]);
+
+  return { isGlitching, glitchIntensity };
+}
 
 interface RadioInterfaceProps {
   showPTT?: boolean;
@@ -29,6 +73,7 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
 
   const { tune, pttStart, pttEnd } = useSocket();
   const { isHandsetConnected } = useDeviceStore();
+  const { isGlitching, glitchIntensity } = useEMFInterference(isPoweredOn);
 
   const handleTune = (frequency: number) => {
     tune(frequency);
@@ -59,7 +104,7 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
   return (
     <div className="radio-interface">
       {/* The Radio Unit */}
-      <div className={`radio-unit ${isPoweredOn ? 'powered-on' : 'powered-off'}`}>
+      <div className={`radio-unit ${isPoweredOn ? 'powered-on' : 'powered-off'} ${isGlitching ? `emf-glitch emf-${glitchIntensity}` : ''}`}>
         {/* Top Bar: Power + Antenna + LEDs */}
         <div className="radio-top-bar">
           <button
@@ -102,7 +147,7 @@ export function RadioInterface({ showPTT = true, activeTuneButton = null, output
           </div>
 
           {/* Frequency Readout */}
-          <div className="frequency-readout">
+          <div className={`frequency-readout ${isGlitching ? 'emf-freq-glitch' : ''}`}>
             <span className="frequency-value">
               {currentFrequency.toFixed(3)}
             </span>
