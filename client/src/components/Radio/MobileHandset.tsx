@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRadioStore } from '../../stores/radioStore';
 import { useSocket } from '../../hooks/useSocket';
 import { usePTT } from '../../hooks/usePTT';
@@ -6,6 +6,40 @@ import { useAudioEngine } from '../../hooks/useAudioEngine';
 
 // VU meter segment thresholds
 const VU_SEGMENTS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+
+// Subtle EMF interference for the handset display
+function useHandsetInterference(isLinked: boolean) {
+  const [isGlitching, setIsGlitching] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+
+  const scheduleNext = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    // Longer, less frequent intervals than the main radio: 25-90 seconds
+    const delay = 25000 + Math.random() * 65000;
+    timeoutRef.current = window.setTimeout(() => {
+      if (!isLinked) {
+        scheduleNext();
+        return;
+      }
+      setIsGlitching(true);
+      // Brief flicker: 100-400ms
+      const duration = 100 + Math.random() * 300;
+      setTimeout(() => {
+        setIsGlitching(false);
+        scheduleNext();
+      }, duration);
+    }, delay);
+  }, [isLinked]);
+
+  useEffect(() => {
+    scheduleNext();
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [scheduleNext]);
+
+  return isGlitching;
+}
 
 interface MobileHandsetProps {
   embedded?: boolean; // Skip link screen when embedded in desktop view
@@ -132,6 +166,7 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
 
   // Character is listening if on voice channel
   const hasCharacter = broadcastType === 'voice' && characterCallsign;
+  const isHandsetGlitching = useHandsetInterference(isLinked);
 
   // Link screen
   if (!isLinked) {
@@ -188,12 +223,12 @@ export function MobileHandset({ embedded = false }: MobileHandsetProps) {
         </div>
 
         {/* CRT-style frequency display */}
-        <div className="handset-crt-display">
+        <div className={`handset-crt-display ${isHandsetGlitching ? 'handset-emf-glitch' : ''}`}>
           <div className="crt-inner">
             <div className="mini-signal-meter">
               <div className="signal-fill" style={{ width: `${(1 - staticLevel) * 100}%` }} />
             </div>
-            <div className="crt-freq-readout">
+            <div className={`crt-freq-readout ${isHandsetGlitching ? 'handset-emf-freq' : ''}`}>
               <span className="crt-freq-value">{currentFrequency.toFixed(3)}</span>
               <span className="crt-freq-unit">MHz</span>
             </div>

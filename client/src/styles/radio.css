@@ -2233,6 +2233,51 @@
   line-height: 1.4;
 }
 
+/* ==================== HANDSET EMF INTERFERENCE ==================== */
+
+/* Subtle CRT flicker on the handset display */
+.handset-crt-display.handset-emf-glitch {
+  animation: handsetEmfFlicker 0.1s steps(2) infinite;
+}
+
+@keyframes handsetEmfFlicker {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(0.75); }
+  60% { filter: brightness(0.9); }
+  100% { filter: brightness(1); }
+}
+
+/* Frequency readout jitter */
+.handset-emf-freq {
+  animation: handsetEmfJitter 0.08s steps(2) infinite;
+}
+
+@keyframes handsetEmfJitter {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(0.5px, -0.5px); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Status indicators flicker */
+.handset-crt-display.handset-emf-glitch .crt-indicator.on {
+  animation: handsetEmfIndicator 0.06s steps(2) infinite;
+}
+
+@keyframes handsetEmfIndicator {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* VU segments flutter */
+.handset-crt-display.handset-emf-glitch .vu-segment.active {
+  animation: handsetEmfVu 0.07s steps(2) infinite;
+}
+
+@keyframes handsetEmfVu {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 /* ==================== MOBILE RESPONSIVE ==================== */
 
 @media (max-width: 480px) {
